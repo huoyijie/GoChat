@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-    // tcp 监听地址 0.0.0.0:8888
-    addr := ":8888"
-
     // 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
     go lib.SignalHandler()
+
+    // tcp 监听地址 0.0.0.0:8888
+    addr := ":8888"
 
     // tcp 监听
     ln, err := net.Listen("tcp", addr)
