@@ -1,0 +1,20 @@
+// protoc --go_out=paths=source_relative:. *.proto
+
+syntax = "proto3";
+
+package lib;
+
+option go_package = "github.com/huoyijie/GoChat/lib";
+
+message Packet {
+  uint64 id   = 1;
+  uint32 kind = 2;
+  bytes  data = 3;
+}
+
+message Msg {
+  uint32 kind = 1;
+  uint64 from = 2;
+  uint64 to   = 3;
+  bytes  data = 4;
+}

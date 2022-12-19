@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"sync"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
+	"google.golang.org/protobuf/proto"
 )
 
 // 封装客户端连接，增加 snowflake.ID
@@ -72,12 +72,12 @@ func main() {
 		go lib.HandleConnection(
 			conn,
 			id,
-			func(msg string) {
+			func(msg proto.Message) {
 				rSockets(func() {
 					for k, v := range sockets {
 						// 向其他所有客户端(除了自己)转发消息
 						if k != id {
-							fmt.Fprintf(v.conn, "%d:%s\r\n", id, msg)
+							lib.SendMsg(v.conn, msg)
 						}
 					}
 				})

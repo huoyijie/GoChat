@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/snowflake"
+	"google.golang.org/protobuf/proto"
 )
 
 // 如果 err != nil，输出错误日志并退出进程
@@ -45,25 +46,25 @@ func logConn(id snowflake.ID) func() {
 }
 
 // 接收连接另一侧发送的消息，输出消息到日志
-func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(string), close func()) {
+func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(proto.Message), close func()) {
 	// 连接建立和断开时，分别输出日志
 	defer logConn(id)()
 
 	// 从当前方法返回后，断开连接，清理资源等
 	defer close()
 
-	// 设置如何处理接收到的字节流，bufio.ScanLines 为逐行扫描的方式把字节流分割为消息流
+	// 设置如何处理接收到的字节流，SplitFunc 会根据 packet 开头 length 把字节流分割为消息流
 	scanner := bufio.NewScanner(conn)
-	scanner.Split(bufio.ScanLines)
+	scanner.Split(SplitFunc)
 
 	// 循环解析消息，每当解析出一条消息后，scan() 返回 true
 	for scanner.Scan() {
-		// 返回解析出的消息字节 slice
-		bytes := scanner.Bytes()
-		// 消息内容不为空，则输出到日志
-		if len(bytes) > 0 {
-			handleMsg(string(bytes))
+		// 把 scanner 解析出的消息字节 slice 转换为 Msg
+		msg, err := RecvMsg(scanner.Bytes())
+		if err != nil {
+			return
 		}
+		handleMsg(msg)
 	}
 
 	// 如果解析消息遇到错误，则输出错误到日志

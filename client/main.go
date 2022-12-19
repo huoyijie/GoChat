@@ -6,6 +6,7 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
+	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	go lib.HandleConnection(
 		conn,
 		id,
-		func(msg string) {
+		func(msg proto.Message) {
 			lib.PrintMessage(msg)
 		},
 		func() {
@@ -36,6 +37,11 @@ func main() {
 		// 读取用户输入消息
 		fmt.Scanf("%s", &input)
 		// 向服务端发送消息
-		fmt.Fprintf(conn, "%s\r\n", input)
+		lib.SendMsg(conn, &lib.Msg{
+			Kind: 1,
+			From: 1,
+			To:   2,
+			Data: []byte(input),
+		})
 	}
 }
