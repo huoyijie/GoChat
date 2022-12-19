@@ -37,7 +37,7 @@ func main() {
 		fmt.Scanf("%s", &input)
 		// 向服务端发送消息
 		lib.SendMsg(conn, &lib.Msg{
-			Kind: 1,
+			Kind: lib.MsgKind_TEXT,
 			From: 1,
 			To:   2,
 			Data: []byte(input),

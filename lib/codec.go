@@ -47,7 +47,7 @@ func SendMsg(conn net.Conn, msg *Msg) (err error) {
 
 	err = sendPack(conn, &Packet{
 		Id:   1,
-		Kind: 1,
+		Kind: PackKind_MSG,
 		Data: msgBytes,
 	})
 
