@@ -77,7 +77,7 @@ func main() {
 					for k, v := range sockets {
 						// 向其他所有客户端(除了自己)转发消息
 						if k != id {
-							fmt.Fprintf(v.conn, "%d:%s\r\n", k, msg)
+							fmt.Fprintf(v.conn, "%d:%s\r\n", id, msg)
 						}
 					}
 				})
