@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
-	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -24,7 +23,7 @@ func main() {
 	go lib.HandleConnection(
 		conn,
 		id,
-		func(msg proto.Message) {
+		func(msg *lib.Msg) {
 			lib.PrintMessage(msg)
 		},
 		func() {

@@ -39,7 +39,7 @@ func SplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return
 }
 
-func SendMsg(conn net.Conn, msg proto.Message) (err error) {
+func SendMsg(conn net.Conn, msg *Msg) (err error) {
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
 		return
@@ -54,7 +54,7 @@ func SendMsg(conn net.Conn, msg proto.Message) (err error) {
 	return
 }
 
-func RecvMsg(bytes []byte) (msg proto.Message, err error) {
+func RecvMsg(bytes []byte) (msg *Msg, err error) {
 	pack, err := recvPack(bytes)
 	if err != nil {
 		return

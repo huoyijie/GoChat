@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/snowflake"
-	"google.golang.org/protobuf/proto"
 )
 
 // 如果 err != nil，输出错误日志并退出进程
@@ -33,8 +32,8 @@ func LogMessage(msg ...any) {
 }
 
 // 打印消息
-func PrintMessage(msg ...any) {
-	fmt.Println(msg...)
+func PrintMessage(msg *Msg) {
+	fmt.Fprintf(os.Stdout, "%d->%d:%s\n", msg.From, msg.To, msg.Data)
 }
 
 // 输出连接建立与关闭消息到日志，包内私有方法，外部不能调用
@@ -46,7 +45,7 @@ func logConn(id snowflake.ID) func() {
 }
 
 // 接收连接另一侧发送的消息，输出消息到日志
-func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(proto.Message), close func()) {
+func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(*Msg), close func()) {
 	// 连接建立和断开时，分别输出日志
 	defer logConn(id)()
 
