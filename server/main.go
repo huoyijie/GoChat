@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"sync"
 
@@ -56,24 +57,38 @@ func main() {
 
 		// 生成新 ID
 		id := node.Generate()
+		packChan := make(chan *lib.Packet)
 		// 保存新连接
 		wSockets(func() {
-			sockets[id] = &lib.Socket{Id: id, Conn: conn}
+			sockets[id] = &lib.Socket{Id: id, PackChan: packChan}
 		})
 
+		go lib.SendTo(conn, packChan)
+
 		// 为每个客户端启动一个协程，读取客户端发送的消息并转发
-		go lib.HandleConnection(
+		go lib.RecvFrom(
 			conn,
-			id,
-			func(msg *lib.Msg) {
-				rSockets(func() {
-					for k, v := range sockets {
-						// 向其他所有客户端(除了自己)转发消息
-						if k != id {
-							lib.SendMsg(v.Conn, msg)
+			// todo return error and close conn
+			func(pack *lib.Packet) {
+				switch pack.Kind {
+				case lib.PackKind_MSG:
+					rSockets(func() {
+						for k, v := range sockets {
+							// 向其他所有客户端(除了自己)转发消息
+							if k != id {
+								v.PackChan <- &lib.Packet{
+									Kind: pack.Kind,
+									Data: pack.Data,
+								}
+							}
 						}
+					})
+				case lib.PackKind_SIGNUP:
+					signup := &lib.Signup{}
+					if err := lib.Unmarshal(pack.Data, signup); err == nil {
+						fmt.Println(signup.Auth)
 					}
-				})
+				}
 			},
 			func() {
 				// 从当前方法返回时，关闭连接

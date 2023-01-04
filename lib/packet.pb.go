@@ -25,9 +25,12 @@ const (
 type PackKind int32
 
 const (
-	PackKind_PING PackKind = 0
-	PackKind_PONG PackKind = 1
-	PackKind_MSG  PackKind = 2
+	PackKind_PING   PackKind = 0
+	PackKind_PONG   PackKind = 1
+	PackKind_SIGNUP PackKind = 2
+	PackKind_SIGNIN PackKind = 3
+	PackKind_TOKEN  PackKind = 4
+	PackKind_MSG    PackKind = 5
 )
 
 // Enum value maps for PackKind.
@@ -35,12 +38,18 @@ var (
 	PackKind_name = map[int32]string{
 		0: "PING",
 		1: "PONG",
-		2: "MSG",
+		2: "SIGNUP",
+		3: "SIGNIN",
+		4: "TOKEN",
+		5: "MSG",
 	}
 	PackKind_value = map[string]int32{
-		"PING": 0,
-		"PONG": 1,
-		"MSG":  2,
+		"PING":   0,
+		"PONG":   1,
+		"SIGNUP": 2,
+		"SIGNIN": 3,
+		"TOKEN":  4,
+		"MSG":    5,
 	}
 )
 
@@ -177,6 +186,265 @@ func (x *Packet) GetData() []byte {
 	return nil
 }
 
+type Auth struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+}
+
+func (x *Auth) Reset() {
+	*x = Auth{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Auth) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Auth) ProtoMessage() {}
+
+func (x *Auth) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Auth.ProtoReflect.Descriptor instead.
+func (*Auth) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Auth) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *Auth) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type Signup struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Auth *Auth `protobuf:"bytes,1,opt,name=auth,proto3" json:"auth,omitempty"`
+}
+
+func (x *Signup) Reset() {
+	*x = Signup{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Signup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Signup) ProtoMessage() {}
+
+func (x *Signup) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Signup.ProtoReflect.Descriptor instead.
+func (*Signup) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Signup) GetAuth() *Auth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+type Signin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Auth *Auth `protobuf:"bytes,1,opt,name=auth,proto3" json:"auth,omitempty"`
+}
+
+func (x *Signin) Reset() {
+	*x = Signin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Signin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Signin) ProtoMessage() {}
+
+func (x *Signin) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Signin.ProtoReflect.Descriptor instead.
+func (*Signin) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Signin) GetAuth() *Auth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+type Token struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Token []byte `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (x *Token) Reset() {
+	*x = Token{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Token) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Token) ProtoMessage() {}
+
+func (x *Token) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Token.ProtoReflect.Descriptor instead.
+func (*Token) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Token) GetToken() []byte {
+	if x != nil {
+		return x.Token
+	}
+	return nil
+}
+
+type TokenRes struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Code  uint32 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Id    uint64 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	Token []byte `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (x *TokenRes) Reset() {
+	*x = TokenRes{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TokenRes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TokenRes) ProtoMessage() {}
+
+func (x *TokenRes) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TokenRes.ProtoReflect.Descriptor instead.
+func (*TokenRes) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TokenRes) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *TokenRes) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *TokenRes) GetToken() []byte {
+	if x != nil {
+		return x.Token
+	}
+	return nil
+}
+
 type Msg struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -191,7 +459,7 @@ type Msg struct {
 func (x *Msg) Reset() {
 	*x = Msg{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_packet_proto_msgTypes[1]
+		mi := &file_packet_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -204,7 +472,7 @@ func (x *Msg) String() string {
 func (*Msg) ProtoMessage() {}
 
 func (x *Msg) ProtoReflect() protoreflect.Message {
-	mi := &file_packet_proto_msgTypes[1]
+	mi := &file_packet_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +485,7 @@ func (x *Msg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Msg.ProtoReflect.Descriptor instead.
 func (*Msg) Descriptor() ([]byte, []int) {
-	return file_packet_proto_rawDescGZIP(), []int{1}
+	return file_packet_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Msg) GetKind() MsgKind {
@@ -257,19 +525,37 @@ var file_packet_proto_rawDesc = []byte{
 	0x04, 0x6b, 0x69, 0x6e, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0d, 0x2e, 0x6c, 0x69,
 	0x62, 0x2e, 0x50, 0x61, 0x63, 0x6b, 0x4b, 0x69, 0x6e, 0x64, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64,
 	0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04,
-	0x64, 0x61, 0x74, 0x61, 0x22, 0x5f, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x20, 0x0a, 0x04, 0x6b,
-	0x69, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0c, 0x2e, 0x6c, 0x69, 0x62, 0x2e,
-	0x4d, 0x73, 0x67, 0x4b, 0x69, 0x6e, 0x64, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x12, 0x12, 0x0a,
-	0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x04, 0x66, 0x72, 0x6f,
-	0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x74, 0x6f, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x02, 0x74,
-	0x6f, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x2a, 0x27, 0x0a, 0x08, 0x50, 0x61, 0x63, 0x6b, 0x4b, 0x69, 0x6e,
-	0x64, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x49, 0x4e, 0x47, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x50,
-	0x4f, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x07, 0x0a, 0x03, 0x4d, 0x53, 0x47, 0x10, 0x02, 0x2a, 0x13,
-	0x0a, 0x07, 0x4d, 0x73, 0x67, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x54, 0x45, 0x58,
-	0x54, 0x10, 0x00, 0x42, 0x20, 0x5a, 0x1e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x68, 0x75, 0x6f, 0x79, 0x69, 0x6a, 0x69, 0x65, 0x2f, 0x47, 0x6f, 0x43, 0x68, 0x61,
-	0x74, 0x2f, 0x6c, 0x69, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x64, 0x61, 0x74, 0x61, 0x22, 0x3e, 0x0a, 0x04, 0x41, 0x75, 0x74, 0x68, 0x12, 0x1a, 0x0a, 0x08,
+	0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
+	0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73,
+	0x77, 0x6f, 0x72, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73,
+	0x77, 0x6f, 0x72, 0x64, 0x22, 0x27, 0x0a, 0x06, 0x53, 0x69, 0x67, 0x6e, 0x75, 0x70, 0x12, 0x1d,
+	0x0a, 0x04, 0x61, 0x75, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x6c,
+	0x69, 0x62, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x52, 0x04, 0x61, 0x75, 0x74, 0x68, 0x22, 0x27, 0x0a,
+	0x06, 0x53, 0x69, 0x67, 0x6e, 0x69, 0x6e, 0x12, 0x1d, 0x0a, 0x04, 0x61, 0x75, 0x74, 0x68, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x6c, 0x69, 0x62, 0x2e, 0x41, 0x75, 0x74, 0x68,
+	0x52, 0x04, 0x61, 0x75, 0x74, 0x68, 0x22, 0x1d, 0x0a, 0x05, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12,
+	0x14, 0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05,
+	0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x44, 0x0a, 0x08, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65,
+	0x73, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52,
+	0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x5f, 0x0a, 0x03, 0x4d,
+	0x73, 0x67, 0x12, 0x20, 0x0a, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e,
+	0x32, 0x0c, 0x2e, 0x6c, 0x69, 0x62, 0x2e, 0x4d, 0x73, 0x67, 0x4b, 0x69, 0x6e, 0x64, 0x52, 0x04,
+	0x6b, 0x69, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x04, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x74, 0x6f, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x02, 0x74, 0x6f, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x2a, 0x4a, 0x0a, 0x08,
+	0x50, 0x61, 0x63, 0x6b, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x49, 0x4e, 0x47,
+	0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x4f, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06,
+	0x53, 0x49, 0x47, 0x4e, 0x55, 0x50, 0x10, 0x02, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x49, 0x47, 0x4e,
+	0x49, 0x4e, 0x10, 0x03, 0x12, 0x09, 0x0a, 0x05, 0x54, 0x4f, 0x4b, 0x45, 0x4e, 0x10, 0x04, 0x12,
+	0x07, 0x0a, 0x03, 0x4d, 0x53, 0x47, 0x10, 0x05, 0x2a, 0x13, 0x0a, 0x07, 0x4d, 0x73, 0x67, 0x4b,
+	0x69, 0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x54, 0x45, 0x58, 0x54, 0x10, 0x00, 0x42, 0x20, 0x5a,
+	0x1e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x75, 0x6f, 0x79,
+	0x69, 0x6a, 0x69, 0x65, 0x2f, 0x47, 0x6f, 0x43, 0x68, 0x61, 0x74, 0x2f, 0x6c, 0x69, 0x62, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -285,21 +571,28 @@ func file_packet_proto_rawDescGZIP() []byte {
 }
 
 var file_packet_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_packet_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_packet_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_packet_proto_goTypes = []interface{}{
-	(PackKind)(0),  // 0: lib.PackKind
-	(MsgKind)(0),   // 1: lib.MsgKind
-	(*Packet)(nil), // 2: lib.Packet
-	(*Msg)(nil),    // 3: lib.Msg
+	(PackKind)(0),    // 0: lib.PackKind
+	(MsgKind)(0),     // 1: lib.MsgKind
+	(*Packet)(nil),   // 2: lib.Packet
+	(*Auth)(nil),     // 3: lib.Auth
+	(*Signup)(nil),   // 4: lib.Signup
+	(*Signin)(nil),   // 5: lib.Signin
+	(*Token)(nil),    // 6: lib.Token
+	(*TokenRes)(nil), // 7: lib.TokenRes
+	(*Msg)(nil),      // 8: lib.Msg
 }
 var file_packet_proto_depIdxs = []int32{
 	0, // 0: lib.Packet.kind:type_name -> lib.PackKind
-	1, // 1: lib.Msg.kind:type_name -> lib.MsgKind
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 1: lib.Signup.auth:type_name -> lib.Auth
+	3, // 2: lib.Signin.auth:type_name -> lib.Auth
+	1, // 3: lib.Msg.kind:type_name -> lib.MsgKind
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_packet_proto_init() }
@@ -321,6 +614,66 @@ func file_packet_proto_init() {
 			}
 		}
 		file_packet_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Auth); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Signup); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Signin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Token); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TokenRes); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Msg); i {
 			case 0:
 				return &v.state
@@ -339,7 +692,7 @@ func file_packet_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_packet_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   2,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

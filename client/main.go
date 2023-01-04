@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"net"
 
-	"github.com/bwmarrin/snowflake"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/huoyijie/GoChat/lib"
 )
 
@@ -17,30 +16,27 @@ func main() {
 	// 连接遇到错误则退出进程
 	lib.FatalNotNil(err)
 
-	// id 由服务器生成，暂时未发给客户端
-	var id snowflake.ID
+	packChan := make(chan *lib.Packet)
+	go lib.SendTo(conn, packChan)
+
 	// 连接成功后启动协程输出服务器的转发消息
-	go lib.HandleConnection(
+	go lib.RecvFrom(
 		conn,
-		id,
-		func(msg *lib.Msg) {
-			lib.PrintMessage(msg)
+		func(pack *lib.Packet) {
+			if pack.Kind == lib.PackKind_MSG {
+				msg := &lib.Msg{}
+				if err := lib.Unmarshal(pack.Data, msg); err == nil {
+					lib.PrintMessage(msg)
+				}
+			}
 		},
 		func() {
 			// 从当前方法返回时，关闭连接
 			conn.Close()
 		})
 
-	var input string
-	for {
-		// 读取用户输入消息
-		fmt.Scanf("%s", &input)
-		// 向服务端发送消息
-		lib.SendMsg(conn, &lib.Msg{
-			Kind: lib.MsgKind_TEXT,
-			From: 1,
-			To:   2,
-			Data: []byte(input),
-		})
-	}
+	p := tea.NewProgram(home{choice: CHOICE_SIGNIN, base: base{packChan: packChan}})
+
+	_, err = p.Run()
+	lib.FatalNotNil(err)
 }

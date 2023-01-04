@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/bwmarrin/snowflake"
 )
 
 // 如果 err != nil，输出错误日志并退出进程
@@ -36,19 +34,8 @@ func PrintMessage(msg *Msg) {
 	fmt.Fprintf(os.Stdout, "%d->%d:%s\n", msg.From, msg.To, msg.Data)
 }
 
-// 输出连接建立与关闭消息到日志，包内私有方法，外部不能调用
-func logConn(id snowflake.ID) func() {
-	fmt.Fprintf(os.Stdout, "%d: 已连接\n", id)
-	return func() {
-		fmt.Fprintf(os.Stdout, "%d: 已断开连接\n", id)
-	}
-}
-
 // 接收连接另一侧发送的消息，输出消息到日志
-func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(*Msg), close func()) {
-	// 连接建立和断开时，分别输出日志
-	defer logConn(id)()
-
+func RecvFrom(conn net.Conn, handlePack func(*Packet), close func()) {
 	// 从当前方法返回后，断开连接，清理资源等
 	defer close()
 
@@ -58,16 +45,33 @@ func HandleConnection(conn net.Conn, id snowflake.ID, handleMsg func(*Msg), clos
 
 	// 循环解析消息，每当解析出一条消息后，scan() 返回 true
 	for scanner.Scan() {
-		// 把 scanner 解析出的消息字节 slice 转换为 Msg
-		msg, err := RecvMsg(scanner.Bytes())
-		if err != nil {
+		// 把 scanner 解析出的消息字节 slice 解析为 Pack
+		pack := &Packet{}
+		if err := Unmarshal(scanner.Bytes(), pack); err != nil {
 			return
 		}
-		handleMsg(msg)
+		handlePack(pack)
 	}
 
 	// 如果解析消息遇到错误，则输出错误到日志
 	LogNotNil(scanner.Err())
+}
+
+func SendTo(conn net.Conn, ch <-chan *Packet) {
+	var id uint64
+	for pack := range ch {
+		id++
+		pack.Id = id
+
+		bytes, err := MarshalPack(pack)
+		if err == nil {
+			_, err = conn.Write(bytes)
+		}
+
+		if err != nil {
+			return
+		}
+	}
 }
 
 // 信号监听处理器

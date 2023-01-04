@@ -4,7 +4,6 @@ import (
 	b "bytes"
 	"encoding/binary"
 	"errors"
-	"net"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -39,53 +38,29 @@ func SplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return
 }
 
-func SendMsg(conn net.Conn, msg *Msg) (err error) {
-	msgBytes, err := proto.Marshal(msg)
-	if err != nil {
-		return
-	}
-
-	err = sendPack(conn, &Packet{
-		Id:   1,
-		Kind: PackKind_MSG,
-		Data: msgBytes,
-	})
-
-	return
-}
-
-func RecvMsg(bytes []byte) (msg *Msg, err error) {
-	pack, err := recvPack(bytes)
-	if err != nil {
-		return
-	}
-
-	msg = &Msg{}
-	err = proto.Unmarshal(pack.Data, msg)
-	return
-}
-
-func sendPack(conn net.Conn, pack proto.Message) (err error) {
+func MarshalPack(pack proto.Message) (bytes []byte, err error) {
 	packBytes, err := proto.Marshal(pack)
 	if err != nil {
 		return
 	}
 
 	packLenFieldBytes := Uint32ToBytes(uint32(len(packBytes)))
-	bytes := b.Join(
+	bytes = b.Join(
 		[][]byte{
 			packLenFieldBytes,
 			packBytes,
 		},
 		[]byte{},
 	)
-
-	_, err = conn.Write(bytes)
 	return
 }
 
-func recvPack(bytes []byte) (pack *Packet, err error) {
-	pack = &Packet{}
-	err = proto.Unmarshal(bytes, pack)
+func Marshal(m proto.Message) (bytes []byte, err error) {
+	bytes, err = proto.Marshal(m)
+	return
+}
+
+func Unmarshal(bytes []byte, m proto.Message) (err error) {
+	err = proto.Unmarshal(bytes, m)
 	return
 }
