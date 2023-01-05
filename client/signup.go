@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	signupLabels        = []string{"用户名", "密码", "确认密码"}
+	signupLabels  = []string{"用户名", "密码", "确认密码"}
 	focusedSignup = focusedStyle.Copy().Render("[ 注册 ]")
 	blurredSignup = fmt.Sprintf("[ %s ]", blurredStyle.Render("注册"))
 )

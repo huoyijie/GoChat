@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	signinLabels        = []string{"用户名", "密码"}
+	signinLabels  = []string{"用户名", "密码"}
 	focusedSignin = focusedStyle.Copy().Render("[ 登录 ]")
 	blurredSignin = fmt.Sprintf("[ %s ]", blurredStyle.Render("登录"))
 )
