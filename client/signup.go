@@ -20,12 +20,14 @@ type signup struct {
 	base
 	focusIndex int
 	inputs     []textinput.Model
+	errs       []string
 	cursorMode textinput.CursorMode
 }
 
 func initialSignup(packChan chan<- *lib.Packet) signup {
 	m := signup{
 		inputs: make([]textinput.Model, 3),
+		errs:   []string{"", "", ""},
 		base:   base{packChan: packChan},
 	}
 
@@ -92,6 +94,27 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
 			if s == "enter" && m.focusIndex == len(m.inputs) {
+				if len(m.inputs[0].Value()) < 4 {
+					m.errs[0] = "用户名至少包含4个字母或数字"
+					return m, nil
+				}
+
+				if len(m.inputs[1].Value()) < 8 {
+					m.errs[1] = "密码至少包含8个字母或数字"
+					return m, nil
+				}
+
+				if len(m.inputs[2].Value()) < 8 {
+					m.errs[2] = "密码至少包含8个字母或数字"
+					return m, nil
+				}
+
+				if m.inputs[1].Value() != m.inputs[2].Value() {
+					m.errs[1] = "两次密码输入不一致"
+					m.errs[2] = "两次密码输入不一致"
+					return m, nil
+				}
+
 				bytes, err := lib.Marshal(&lib.Signup{Auth: &lib.Auth{
 					Username: m.inputs[0].Value(),
 					Password: m.inputs[1].Value(),
@@ -148,6 +171,7 @@ func (m *signup) updateInputs(msg tea.Msg) tea.Cmd {
 	// update all of them here without any further logic.
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+		m.errs[i] = ""
 	}
 
 	return tea.Batch(cmds...)
@@ -160,6 +184,10 @@ func (m signup) View() string {
 		b.WriteString(inputStyle.Width(30).Render(signupLabels[i]))
 		b.WriteRune('\n')
 		b.WriteString(m.inputs[i].View())
+		if len(m.errs[i]) > 0 {
+			b.WriteRune('\n')
+			b.WriteString(m.errs[i])
+		}
 		if i < len(m.inputs)-1 {
 			b.WriteString("\n\n")
 		}
