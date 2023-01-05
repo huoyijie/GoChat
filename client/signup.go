@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	signupLabels        = []string{"用户名", "密码", "确认密码"}
 	focusedSignup = focusedStyle.Copy().Render("[ 注册 ]")
 	blurredSignup = fmt.Sprintf("[ %s ]", blurredStyle.Render("注册"))
 )
@@ -36,19 +37,22 @@ func initialSignup(packChan chan<- *lib.Packet) signup {
 
 		switch i {
 		case 0:
-			t.Placeholder = "user name"
+			t.Placeholder = "huoyijie"
 			t.Focus()
 			t.PromptStyle = focusedStyle
 			t.TextStyle = focusedStyle
 			t.CharLimit = 32
+			t.Validate = usernameValidator
 		case 1:
-			t.Placeholder = "your password"
+			t.Placeholder = "hello123"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
+			t.Validate = passwordValidator
 		case 2:
-			t.Placeholder = "confirm password"
+			t.Placeholder = "hello123"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
+			t.Validate = passwordValidator
 		}
 
 		m.inputs[i] = t
@@ -153,9 +157,11 @@ func (m signup) View() string {
 	var b strings.Builder
 
 	for i := range m.inputs {
+		b.WriteString(inputStyle.Width(30).Render(signupLabels[i]))
+		b.WriteRune('\n')
 		b.WriteString(m.inputs[i].View())
 		if i < len(m.inputs)-1 {
-			b.WriteRune('\n')
+			b.WriteString("\n\n")
 		}
 	}
 
