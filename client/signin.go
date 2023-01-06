@@ -22,10 +22,10 @@ type signin struct {
 	cursorMode textinput.CursorMode
 }
 
-func initialSignin(reqChan chan<- *request_t) signin {
+func initialSignin(base base) signin {
 	m := signin{
 		inputs: make([]textinput.Model, 2),
-		base:   base{reqChan: reqChan},
+		base:   base,
 	}
 
 	var t textinput.Model

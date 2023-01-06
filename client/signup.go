@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -26,12 +27,12 @@ type signup struct {
 	cursorMode textinput.CursorMode
 }
 
-func initialSignup(reqChan chan<- *request_t) signup {
+func initialSignup(base base) signup {
 	m := signup{
 		inputs: make([]textinput.Model, 3),
 		errs:   []string{"", "", ""},
 		hint:   "",
-		base:   base{reqChan: reqChan},
+		base:   base,
 	}
 
 	var t textinput.Model
@@ -146,7 +147,15 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				return &users{base: base{reqChan: m.base.reqChan}, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
+				if err := m.base.storage.NewKVS([]KeyValue{
+					{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
+					{Key: "username", Value: tokenRes.Username},
+					{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
+				}); err != nil {
+					return m, tea.Quit
+				}
+
+				return &users{base: m.base, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
 			}
 
 			// Cycle indexes

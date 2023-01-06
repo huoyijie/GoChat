@@ -6,6 +6,7 @@ import (
 
 type base struct {
 	reqChan chan<- *request_t
+	storage *Storage
 }
 
 func (m base) Init() tea.Cmd {

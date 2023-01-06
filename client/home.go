@@ -68,9 +68,9 @@ func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 		case "enter":
 			var next tea.Model
 			if m.choice == CHOICE_SIGNIN {
-				next = initialSignin(m.base.reqChan)
+				next = initialSignin(m.base)
 			} else {
-				next = initialSignup(m.base.reqChan)
+				next = initialSignup(m.base)
 			}
 			return next, nil
 		}
