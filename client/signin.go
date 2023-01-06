@@ -1,11 +1,14 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/huoyijie/GoChat/lib"
 	"github.com/muesli/reflow/indent"
 )
 
@@ -19,13 +22,17 @@ type signin struct {
 	base
 	focusIndex int
 	inputs     []textinput.Model
+	errs       []string
+	hint       string
 	cursorMode textinput.CursorMode
 }
 
 func initialSignin(base base) signin {
 	m := signin{
 		inputs: make([]textinput.Model, 2),
+		errs:   []string{"", "", ""},
 		base:   base,
+		hint:   "",
 	}
 
 	var t textinput.Model
@@ -86,7 +93,53 @@ func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
 			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m, tea.Quit
+				if len(m.inputs[0].Value()) < 4 {
+					m.errs[0] = "用户名至少包含4个字母或数字"
+					return m, nil
+				}
+
+				if len(m.inputs[1].Value()) < 8 {
+					m.errs[1] = "密码至少包含8个字母或数字"
+					return m, nil
+				}
+
+				passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
+				bytes, err := lib.Marshal(&lib.Signin{Auth: &lib.Auth{
+					Username: m.inputs[0].Value(),
+					Passhash: passhash[:],
+				}})
+				if err != nil {
+					return m, tea.Quit
+				}
+
+				req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_SIGNIN, Data: bytes}, true)
+				m.base.reqChan <- req
+
+				res := <-req.c
+				if !res.ok() {
+					m.hint = "登录超时"
+					return m, nil
+				}
+
+				tokenRes := &lib.TokenRes{}
+				if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil {
+					return m, tea.Quit
+				}
+
+				if tokenRes.Code < 0 {
+					m.hint = fmt.Sprintf("登录异常: %d", tokenRes.Code)
+					return m, nil
+				}
+
+				if err := m.base.storage.NewKVS([]KeyValue{
+					{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
+					{Key: "username", Value: tokenRes.Username},
+					{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
+				}); err != nil {
+					return m, tea.Quit
+				}
+
+				return users{base: m.base, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
 			}
 
 			// Cycle indexes
@@ -134,7 +187,9 @@ func (m *signin) updateInputs(msg tea.Msg) tea.Cmd {
 	// update all of them here without any further logic.
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+		m.errs[i] = ""
 	}
+	m.hint = ""
 
 	return tea.Batch(cmds...)
 }
@@ -142,10 +197,19 @@ func (m *signin) updateInputs(msg tea.Msg) tea.Cmd {
 func (m signin) View() string {
 	var b strings.Builder
 
+	if len(m.hint) > 0 {
+		b.WriteString(m.hint)
+		b.WriteString("\n\n")
+	}
+
 	for i := range m.inputs {
 		b.WriteString(inputStyle.Width(30).Render(signinLabels[i]))
 		b.WriteRune('\n')
 		b.WriteString(m.inputs[i].View())
+		if len(m.errs[i]) > 0 {
+			b.WriteRune('\n')
+			b.WriteString(m.errs[i])
+		}
 		if i < len(m.inputs)-1 {
 			b.WriteString("\n\n")
 		}

@@ -235,6 +235,76 @@ func main() {
 							}
 						}
 					}
+				case lib.PackKind_SIGNIN:
+					signin := &lib.Signin{}
+					if err := lib.Unmarshal(pack.Data, signin); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10008}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+							return nil
+						}
+					}
+
+					if account, err := storage.GetAccountByUN(signin.Auth.Username); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10009}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if passhashAndBcrypt, err := base64.StdEncoding.DecodeString(account.PasshashAndBcrypt); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10010}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if err := bcrypt.CompareHashAndPassword(passhashAndBcrypt, signin.Auth.Passhash); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10011}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if token, err := GenerateToken(account.Id); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10012}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Id: account.Id, Username: account.Username, Token: token}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNIN,
+								Data: bytes,
+							}
+						}
+					}
 				}
 				return nil
 			},

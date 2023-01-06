@@ -155,7 +155,7 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 
-				return &users{base: m.base, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
+				return users{base: m.base, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
 			}
 
 			// Cycle indexes
