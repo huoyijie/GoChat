@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -47,18 +48,16 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 	}
 }
 
-func (s *Storage) NewKV(kv *KeyValue) (err error) {
-	err = s.db.Create(kv).Error
+func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
+	err = s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value"}),
+	}).Create(&kvs).Error
 	return
 }
 
 func (s *Storage) GetValue(key string) (kv *KeyValue, err error) {
 	kv = &KeyValue{Key: key}
 	err = s.db.First(kv).Error
-	return
-}
-
-func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
-	err = s.db.Create(&kvs).Error
 	return
 }

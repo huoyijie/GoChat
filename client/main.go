@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net"
 	"path/filepath"
 	"time"
@@ -111,7 +113,35 @@ func main() {
 			conn.Close()
 		})
 
-	p := tea.NewProgram(home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}})
+	var m tea.Model
+	if kv, err := storage.GetValue("token"); err != nil {
+		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+	} else if token, err := base64.StdEncoding.DecodeString(kv.Value); err != nil {
+		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+	} else if bytes, err := lib.Marshal(&lib.Token{Token: token}); err != nil {
+		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+	} else {
+		req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes}, true)
+		reqChan <- req
+		res := <-req.c
+		if !res.ok() {
+			m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+		} else {
+			tokenRes := &lib.TokenRes{}
+			if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil || tokenRes.Code < 0 {
+				m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+			} else if err := storage.NewKVS([]KeyValue{
+				{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
+				{Key: "username", Value: tokenRes.Username},
+				{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)}}); err != nil {
+				m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+			} else {
+				m = users{base: base{reqChan: reqChan, storage: storage}, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}
+			}
+		}
+	}
+
+	p := tea.NewProgram(m)
 
 	_, err = p.Run()
 	lib.FatalNotNil(err)

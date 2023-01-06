@@ -53,6 +53,12 @@ func (s *Storage) NewAccount(account *Account) (err error) {
 	return
 }
 
+func (s *Storage) GetAccountById(id uint64) (account *Account, err error) {
+	account = &Account{Id: id}
+	err = s.db.First(account).Error
+	return
+}
+
 func (s *Storage) GetAccountByUN(username string) (account *Account, err error) {
 	account = &Account{Username: username}
 	err = s.db.First(account).Error
