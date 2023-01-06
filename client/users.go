@@ -1,12 +1,18 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
 )
 
 type users struct {
 	base
+	id       uint64
+	username string
+	token    []byte
 }
 
 func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -17,7 +23,7 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m users) View() string {
-	s := "user list"
+	s := fmt.Sprintf("%d %s\n%s", m.id, m.username, base64.StdEncoding.EncodeToString(m.token))
 	return indent.String("\n"+s+"\n\n", 4)
 }
 

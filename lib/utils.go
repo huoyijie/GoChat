@@ -7,8 +7,30 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 )
+
+var HomeDir = getHomeDir()
+var WorkDir = getWorkDir()
+
+func getHomeDir() (homeDir string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func getWorkDir() (workDir string) {
+	workDir = filepath.Join(HomeDir, ".gochat")
+	if _, err := os.Stat(workDir); os.IsNotExist(err) {
+		if err := os.Mkdir(workDir, 00744); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return
+}
 
 // 如果 err != nil，输出错误日志并退出进程
 func FatalNotNil(err error) {
@@ -35,7 +57,7 @@ func PrintMessage(msg *Msg) {
 }
 
 // 接收连接另一侧发送的消息，输出消息到日志
-func RecvFrom(conn net.Conn, handlePack func(*Packet), close func()) {
+func RecvFrom(conn net.Conn, handlePack func(*Packet) error, close func()) {
 	// 从当前方法返回后，断开连接，清理资源等
 	defer close()
 
@@ -50,28 +72,13 @@ func RecvFrom(conn net.Conn, handlePack func(*Packet), close func()) {
 		if err := Unmarshal(scanner.Bytes(), pack); err != nil {
 			return
 		}
-		handlePack(pack)
+		if err := handlePack(pack); err != nil {
+			return
+		}
 	}
 
 	// 如果解析消息遇到错误，则输出错误到日志
 	LogNotNil(scanner.Err())
-}
-
-func SendTo(conn net.Conn, ch <-chan *Packet) {
-	var id uint64
-	for pack := range ch {
-		id++
-		pack.Id = id
-
-		bytes, err := MarshalPack(pack)
-		if err == nil {
-			_, err = conn.Write(bytes)
-		}
-
-		if err != nil {
-			return
-		}
-	}
 }
 
 // 信号监听处理器

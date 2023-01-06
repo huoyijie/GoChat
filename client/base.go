@@ -2,11 +2,10 @@ package main
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/huoyijie/GoChat/lib"
 )
 
 type base struct {
-	packChan chan<- *lib.Packet
+	reqChan chan<- *request_t
 }
 
 func (m base) Init() tea.Cmd {

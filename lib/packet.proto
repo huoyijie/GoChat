@@ -23,7 +23,7 @@ message Packet {
 
 message Auth {
   string username = 1;
-  string password = 2;
+  bytes  passhash = 2;
 }
 
 message Signup {
@@ -39,9 +39,10 @@ message Token {
 }
 
 message TokenRes {
-  uint32 code  = 1;
-  uint64 id    = 2;
-  bytes  token = 3;
+  int32  code     = 1;
+  uint64 id       = 2;
+  string username = 3;
+  bytes  token    = 4;
 }
 
 enum MsgKind {

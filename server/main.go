@@ -1,12 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"encoding/base64"
 	"net"
+	"path/filepath"
 	"sync"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // 存储当前所有客户端连接
@@ -29,16 +31,37 @@ func rSockets(rSockets func()) {
 	rSockets()
 }
 
+func sendTo(conn net.Conn, packChan <-chan *lib.Packet) {
+	var id uint64
+	for pack := range packChan {
+		if pack.Id == 0 {
+			id++
+			pack.Id = id
+		}
+
+		bytes, err := lib.MarshalPack(pack)
+		if err == nil {
+			_, err = conn.Write(bytes)
+		}
+
+		if err != nil {
+			return
+		}
+	}
+}
+
 func main() {
 	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
 	go lib.SignalHandler()
+
+	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, "server.db"))
+	lib.FatalNotNil(err)
 
 	// tcp 监听地址 0.0.0.0:8888
 	addr := ":8888"
 
 	// tcp 监听
 	ln, err := net.Listen("tcp", addr)
-
 	// tcp 监听遇到错误退出进程
 	lib.FatalNotNil(err)
 	// 输出日志
@@ -63,13 +86,12 @@ func main() {
 			sockets[id] = &lib.Socket{Id: id, PackChan: packChan}
 		})
 
-		go lib.SendTo(conn, packChan)
+		go sendTo(conn, packChan)
 
 		// 为每个客户端启动一个协程，读取客户端发送的消息并转发
 		go lib.RecvFrom(
 			conn,
-			// todo return error and close conn
-			func(pack *lib.Packet) {
+			func(pack *lib.Packet) error {
 				switch pack.Kind {
 				case lib.PackKind_MSG:
 					rSockets(func() {
@@ -85,10 +107,63 @@ func main() {
 					})
 				case lib.PackKind_SIGNUP:
 					signup := &lib.Signup{}
-					if err := lib.Unmarshal(pack.Data, signup); err == nil {
-						fmt.Println(signup.Auth)
+					if err := lib.Unmarshal(pack.Data, signup); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10000}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNUP,
+								Data: bytes,
+							}
+						}
+					}
+
+					passhashAndBcrypt, err := bcrypt.GenerateFromPassword(signup.Auth.Passhash, 14)
+					if err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10001}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNUP,
+								Data: bytes,
+							}
+						}
+					}
+
+					account := &Account{
+						Username:          signup.Auth.Username,
+						PasshashAndBcrypt: base64.StdEncoding.EncodeToString(passhashAndBcrypt),
+					}
+					if err := storage.NewAccount(account); err != nil {
+						if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10002}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_SIGNUP,
+								Data: bytes,
+							}
+						}
+					}
+
+					token, err := GenerateToken(account.Id)
+					if err != nil {
+						return err
+					}
+
+					if bytes, err := lib.Marshal(&lib.TokenRes{Id: account.Id, Username: account.Username, Token: token}); err != nil {
+						return err
+					} else {
+						packChan <- &lib.Packet{
+							Id:   pack.Id,
+							Kind: lib.PackKind_SIGNUP,
+							Data: bytes,
+						}
 					}
 				}
+				return nil
 			},
 			func() {
 				// 从当前方法返回时，关闭连接

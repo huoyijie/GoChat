@@ -6,7 +6,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/huoyijie/GoChat/lib"
 	"github.com/muesli/reflow/indent"
 )
 
@@ -23,10 +22,10 @@ type signin struct {
 	cursorMode textinput.CursorMode
 }
 
-func initialSignin(packChan chan<- *lib.Packet) signin {
+func initialSignin(reqChan chan<- *request_t) signin {
 	m := signin{
 		inputs: make([]textinput.Model, 2),
-		base:   base{packChan: packChan},
+		base:   base{reqChan: reqChan},
 	}
 
 	var t textinput.Model

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
@@ -21,14 +22,16 @@ type signup struct {
 	focusIndex int
 	inputs     []textinput.Model
 	errs       []string
+	hint       string
 	cursorMode textinput.CursorMode
 }
 
-func initialSignup(packChan chan<- *lib.Packet) signup {
+func initialSignup(reqChan chan<- *request_t) signup {
 	m := signup{
 		inputs: make([]textinput.Model, 3),
 		errs:   []string{"", "", ""},
-		base:   base{packChan: packChan},
+		hint:   "",
+		base:   base{reqChan: reqChan},
 	}
 
 	var t textinput.Model
@@ -115,15 +118,35 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
+				passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
 				bytes, err := lib.Marshal(&lib.Signup{Auth: &lib.Auth{
 					Username: m.inputs[0].Value(),
-					Password: m.inputs[1].Value(),
+					Passhash: passhash[:],
 				}})
 				if err != nil {
 					return m, tea.Quit
 				}
-				m.base.packChan <- &lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes}
-				return &users{base: base{packChan: m.base.packChan}}, nil
+
+				req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes}, true)
+				m.base.reqChan <- req
+
+				res := <-req.c
+				if !res.ok() {
+					m.hint = "注册帐号超时"
+					return m, nil
+				}
+
+				tokenRes := &lib.TokenRes{}
+				if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil {
+					return m, tea.Quit
+				}
+
+				if tokenRes.Code < 0 {
+					m.hint = fmt.Sprintf("注册帐号异常: %d", tokenRes.Code)
+					return m, nil
+				}
+
+				return &users{base: base{reqChan: m.base.reqChan}, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}, nil
 			}
 
 			// Cycle indexes
@@ -173,12 +196,18 @@ func (m *signup) updateInputs(msg tea.Msg) tea.Cmd {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 		m.errs[i] = ""
 	}
+	m.hint = ""
 
 	return tea.Batch(cmds...)
 }
 
 func (m signup) View() string {
 	var b strings.Builder
+
+	if len(m.hint) > 0 {
+		b.WriteString(m.hint)
+		b.WriteString("\n\n")
+	}
 
 	for i := range m.inputs {
 		b.WriteString(inputStyle.Width(30).Render(signupLabels[i]))
