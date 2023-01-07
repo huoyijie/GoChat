@@ -103,6 +103,11 @@ func main() {
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
 					lib.PrintMessage(msg)
 				}
+			case lib.PackKind_ERR:
+				errRes := &lib.ErrRes{}
+				if err := lib.Unmarshal(pack.Data, errRes); err == nil {
+					lib.FatalNotNil(fmt.Errorf("系统异常: %d", errRes.Code))
+				}
 			default:
 				resChan <- &response_t{pack: pack}
 			}

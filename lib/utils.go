@@ -53,7 +53,11 @@ func LogMessage(msg ...any) {
 
 // 打印消息
 func PrintMessage(msg *Msg) {
-	fmt.Fprintf(os.Stdout, "%d->%d:%s\n", msg.From, msg.To, msg.Data)
+	fmt.Fprintf(os.Stdout, "%s->%s:%s\n", msg.From, msg.To, msg.Data)
+}
+
+func PrintErr(errRes *ErrRes) {
+	fmt.Fprintf(os.Stdout, "系统异常: %d\n", errRes.Code)
 }
 
 // 接收连接另一侧发送的消息，输出消息到日志

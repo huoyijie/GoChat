@@ -32,11 +32,11 @@ func rSockets(rSockets func()) {
 }
 
 func sendTo(conn net.Conn, packChan <-chan *lib.Packet) {
-	var id uint64
+	var pid uint64
 	for pack := range packChan {
 		if pack.Id == 0 {
-			id++
-			pack.Id = id
+			pid++
+			pack.Id = pid
 		}
 
 		bytes, err := lib.MarshalPack(pack)
@@ -79,11 +79,15 @@ func main() {
 		lib.FatalNotNil(err)
 
 		// 生成新 ID
-		id := node.Generate()
+		sid := node.Generate()
+		var (
+			accId uint64
+			accUN string
+		)
 		packChan := make(chan *lib.Packet)
 		// 保存新连接
 		wSockets(func() {
-			sockets[id] = &lib.Socket{Id: id, PackChan: packChan}
+			sockets[sid] = &lib.Socket{PackChan: packChan}
 		})
 
 		go sendTo(conn, packChan)
@@ -93,18 +97,6 @@ func main() {
 			conn,
 			func(pack *lib.Packet) error {
 				switch pack.Kind {
-				case lib.PackKind_MSG:
-					rSockets(func() {
-						for k, v := range sockets {
-							// 向其他所有客户端(除了自己)转发消息
-							if k != id {
-								v.PackChan <- &lib.Packet{
-									Kind: pack.Kind,
-									Data: pack.Data,
-								}
-							}
-						}
-					})
 				case lib.PackKind_SIGNUP:
 					signup := &lib.Signup{}
 					if err := lib.Unmarshal(pack.Data, signup); err != nil {
@@ -164,6 +156,8 @@ func main() {
 							Kind: lib.PackKind_SIGNUP,
 							Data: bytes,
 						}
+						accId = account.Id
+						accUN = account.Username
 					}
 				case lib.PackKind_TOKEN:
 					token := &lib.Token{}
@@ -233,6 +227,8 @@ func main() {
 								Kind: lib.PackKind_TOKEN,
 								Data: bytes,
 							}
+							accId = account.Id
+							accUN = account.Username
 						}
 					}
 				case lib.PackKind_SIGNIN:
@@ -303,11 +299,12 @@ func main() {
 								Kind: lib.PackKind_SIGNIN,
 								Data: bytes,
 							}
+							accId = account.Id
+							accUN = account.Username
 						}
 					}
 				case lib.PackKind_USERS:
-					users := &lib.Users{}
-					if err := lib.Unmarshal(pack.Data, users); err != nil {
+					if accId == 0 || len(accUN) == 0 {
 						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10013}); err != nil {
 							return err
 						} else {
@@ -320,41 +317,8 @@ func main() {
 						}
 					}
 
-					if id, expired, err := ParseToken(users.Token); err != nil {
+					if users, err := storage.GetUsers(accUN); err != nil {
 						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10014}); err != nil {
-							return err
-						} else {
-							packChan <- &lib.Packet{
-								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
-								Data: bytes,
-							}
-							return nil
-						}
-					} else if expired {
-						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10015}); err != nil {
-							return err
-						} else {
-							packChan <- &lib.Packet{
-								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
-								Data: bytes,
-							}
-							return nil
-						}
-					} else if account, err := storage.GetAccountById(id); err != nil {
-						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10016}); err != nil {
-							return err
-						} else {
-							packChan <- &lib.Packet{
-								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
-								Data: bytes,
-							}
-							return nil
-						}
-					} else if users, err := storage.GetUsers(account.Username); err != nil {
-						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10017}); err != nil {
 							return err
 						} else {
 							packChan <- &lib.Packet{
@@ -375,6 +339,30 @@ func main() {
 							}
 						}
 					}
+				case lib.PackKind_MSG:
+					if accId == 0 || len(accUN) == 0 {
+						if bytes, err := lib.Marshal(&lib.ErrRes{Code: -10015}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Kind: lib.PackKind_ERR,
+								Data: bytes,
+							}
+							return nil
+						}
+					}
+
+					rSockets(func() {
+						for k, v := range sockets {
+							// 向其他所有客户端(除了自己)转发消息
+							if k != sid {
+								v.PackChan <- &lib.Packet{
+									Kind: pack.Kind,
+									Data: pack.Data,
+								}
+							}
+						}
+					})
 				}
 				return nil
 			},
@@ -383,7 +371,7 @@ func main() {
 				conn.Close()
 				// 删除连接
 				wSockets(func() {
-					delete(sockets, id)
+					delete(sockets, sid)
 				})
 			})
 	}

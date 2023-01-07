@@ -12,8 +12,9 @@ enum PackKind {
   SIGNUP = 2;
   SIGNIN = 3;
   TOKEN  = 4;
-  USERS =  5;
+  USERS  = 5;
   MSG    = 6;
+  ERR    = 7;
 }
 
 message Packet {
@@ -46,10 +47,6 @@ message TokenRes {
   bytes  token    = 4;
 }
 
-message Users {
-  bytes token = 1;
-}
-
 message UsersRes {
   int32           code  = 1;
   repeated string users = 2;
@@ -61,7 +58,11 @@ enum MsgKind {
 
 message Msg {
   MsgKind kind = 1;
-  uint64  from = 2;
-  uint64  to   = 3;
+  string  from = 2;
+  string  to   = 3;
   bytes   data = 4;
+}
+
+message ErrRes {
+  int32 code  = 1;
 }

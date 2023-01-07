@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -11,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/huoyijie/GoChat/lib"
+	"github.com/muesli/reflow/indent"
 )
 
 const listHeight = 14
@@ -21,7 +21,6 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	usersHelpStyle    = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
 )
 
 type item string
@@ -53,21 +52,11 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 type users struct {
 	base
-	list   list.Model
-	choice string
+	list list.Model
 }
 
 func initialUsers(base base) users {
-	kv, err := base.storage.GetValue("token")
-	lib.FatalNotNil(err)
-
-	token, err := base64.StdEncoding.DecodeString(kv.Value)
-	lib.FatalNotNil(err)
-
-	bytes, err := lib.Marshal(&lib.Token{Token: token})
-	lib.FatalNotNil(err)
-
-	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_USERS, Data: bytes}, true)
+	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_USERS}, true)
 	base.reqChan <- req
 
 	res := <-req.c
@@ -120,10 +109,10 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keypress := msg.String(); keypress {
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
-			if ok {
-				m.choice = string(i)
+			if !ok {
+				return m, tea.Quit
 			}
-			return m, tea.Quit
+			return initialChat(string(i), m.base), nil
 		}
 	}
 
@@ -133,10 +122,7 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m users) View() string {
-	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
-	}
-	return "\n" + m.list.View()
+	return indent.String("\n"+m.list.View(), 4)
 }
 
 var _ tea.Model = (*users)(nil)
