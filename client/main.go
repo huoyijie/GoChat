@@ -136,7 +136,7 @@ func main() {
 				{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)}}); err != nil {
 				m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
 			} else {
-				m = users{base: base{reqChan: reqChan, storage: storage}, id: tokenRes.Id, username: tokenRes.Username, token: tokenRes.Token}
+				m = initialUsers(base{reqChan: reqChan, storage: storage})
 			}
 		}
 	}

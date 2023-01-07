@@ -64,3 +64,18 @@ func (s *Storage) GetAccountByUN(username string) (account *Account, err error) 
 	err = s.db.First(account).Error
 	return
 }
+
+func (s *Storage) GetUsers(self string) (users []string, err error) {
+	var accounts []Account
+	err = s.db.Select("username").Find(&accounts).Order("username").Error
+	if err != nil {
+		return
+	}
+	users = make([]string, 0, len(accounts)-1)
+	for i := range accounts {
+		if accounts[i].Username != self {
+			users = append(users, accounts[i].Username)
+		}
+	}
+	return
+}

@@ -305,6 +305,76 @@ func main() {
 							}
 						}
 					}
+				case lib.PackKind_USERS:
+					users := &lib.Users{}
+					if err := lib.Unmarshal(pack.Data, users); err != nil {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10013}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+							return nil
+						}
+					}
+
+					if id, expired, err := ParseToken(users.Token); err != nil {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10014}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if expired {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10015}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if account, err := storage.GetAccountById(id); err != nil {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10016}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else if users, err := storage.GetUsers(account.Username); err != nil {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10017}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+							return nil
+						}
+					} else {
+						if bytes, err := lib.Marshal(&lib.UsersRes{Users: users}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Id:   pack.Id,
+								Kind: lib.PackKind_USERS,
+								Data: bytes,
+							}
+						}
+					}
 				}
 				return nil
 			},

@@ -2,29 +2,141 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 
+	"io"
+
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/reflow/indent"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/huoyijie/GoChat/lib"
 )
+
+const listHeight = 14
+
+var (
+	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
+	usersHelpStyle    = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+)
+
+type item string
+
+func (i item) FilterValue() string { return "" }
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int                               { return 1 }
+func (d itemDelegate) Spacing() int                              { return 0 }
+func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%d. %s", index+1, i)
+
+	fn := itemStyle.Render
+	if index == m.Index() {
+		fn = func(s string) string {
+			return selectedItemStyle.Render("> " + s)
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
+}
 
 type users struct {
 	base
-	id       uint64
-	username string
-	token    []byte
+	list   list.Model
+	choice string
+}
+
+func initialUsers(base base) users {
+	kv, err := base.storage.GetValue("token")
+	lib.FatalNotNil(err)
+
+	token, err := base64.StdEncoding.DecodeString(kv.Value)
+	lib.FatalNotNil(err)
+
+	bytes, err := lib.Marshal(&lib.Token{Token: token})
+	lib.FatalNotNil(err)
+
+	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_USERS, Data: bytes}, true)
+	base.reqChan <- req
+
+	res := <-req.c
+	if !res.ok() {
+		lib.FatalNotNil(errors.New("获取用户列表超时"))
+	}
+
+	usersRes := &lib.UsersRes{}
+	if err := lib.Unmarshal(res.pack.Data, usersRes); err != nil {
+		lib.FatalNotNil(errors.New("获取用户列表异常"))
+	}
+
+	if usersRes.Code < 0 {
+		lib.FatalNotNil(fmt.Errorf("获取用户列表异常: %d", usersRes.Code))
+	}
+
+	items := make([]list.Item, len(usersRes.Users))
+	for i := range usersRes.Users {
+		items[i] = item(usersRes.Users[i])
+	}
+
+	const defaultWidth = 20
+
+	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+	l.Title = "用户列表"
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(false)
+	l.Styles.Title = titleStyle
+	l.Styles.PaginationStyle = paginationStyle
+	l.Styles.HelpStyle = usersHelpStyle
+
+	return users{list: l, base: base}
+}
+
+func (m users) Init() tea.Cmd {
+	return nil
 }
 
 func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m, cmd := m.base.Update(msg); cmd != nil {
 		return m, cmd
 	}
-	return m, nil
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.list.SetWidth(msg.Width)
+		return m, nil
+
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "enter":
+			i, ok := m.list.SelectedItem().(item)
+			if ok {
+				m.choice = string(i)
+			}
+			return m, tea.Quit
+		}
+	}
+
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
 }
 
 func (m users) View() string {
-	s := fmt.Sprintf("%d %s\n%s", m.id, m.username, base64.StdEncoding.EncodeToString(m.token))
-	return indent.String("\n"+s+"\n\n", 4)
+	if m.choice != "" {
+		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
+	}
+	return "\n" + m.list.View()
 }
 
 var _ tea.Model = (*users)(nil)
