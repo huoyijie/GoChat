@@ -83,7 +83,15 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			fmt.Println(m.textarea.Value())
 			return m, tea.Quit
 		case tea.KeyEnter:
-			
+			chatMsg := &lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}
+			bytes, err := lib.Marshal(chatMsg)
+			if err != nil {
+				return m, tea.Quit
+			}
+
+			req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_MSG, Data: bytes}, true)
+			m.base.reqChan <- req
+
 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", m.from))+m.textarea.Value())
 			m.viewport.SetContent(strings.Join(m.messages, "\n"))
 			m.viewport.GotoBottom()

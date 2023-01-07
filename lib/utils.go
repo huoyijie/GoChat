@@ -61,9 +61,9 @@ func PrintErr(errRes *ErrRes) {
 }
 
 // 接收连接另一侧发送的消息，输出消息到日志
-func RecvFrom(conn net.Conn, handlePack func(*Packet) error, close func()) {
+func RecvFrom(conn net.Conn, handlePack func(*Packet) error) {
 	// 从当前方法返回后，断开连接，清理资源等
-	defer close()
+	defer conn.Close()
 
 	// 设置如何处理接收到的字节流，SplitFunc 会根据 packet 开头 length 把字节流分割为消息流
 	scanner := bufio.NewScanner(conn)

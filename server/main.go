@@ -4,32 +4,10 @@ import (
 	"encoding/base64"
 	"net"
 	"path/filepath"
-	"sync"
 
-	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// 存储当前所有客户端连接
-var sockets = make(map[snowflake.ID]*lib.Socket)
-
-// 多个协程并发读写 sockets 时，需要使用读写锁
-var lock sync.RWMutex
-
-// 写锁
-func wSockets(wSockets func()) {
-	lock.Lock()
-	defer lock.Unlock()
-	wSockets()
-}
-
-// 读锁
-func rSockets(rSockets func()) {
-	lock.RLock()
-	defer lock.RUnlock()
-	rSockets()
-}
 
 func sendTo(conn net.Conn, packChan <-chan *lib.Packet) {
 	var pid uint64
@@ -67,10 +45,6 @@ func main() {
 	// 输出日志
 	lib.LogMessage("Listening on", addr)
 
-	// 创建 snowflake Node
-	node, err := snowflake.NewNode(1)
-	lib.FatalNotNil(err)
-
 	// 循环接受客户端连接
 	for {
 		// 每当有客户端连接时，ln.Accept 会返回新的连接 conn
@@ -78,17 +52,11 @@ func main() {
 		// 如果接受的新连接遇到错误，则退出进程
 		lib.FatalNotNil(err)
 
-		// 生成新 ID
-		sid := node.Generate()
 		var (
 			accId uint64
 			accUN string
 		)
 		packChan := make(chan *lib.Packet)
-		// 保存新连接
-		wSockets(func() {
-			sockets[sid] = &lib.Socket{PackChan: packChan}
-		})
 
 		go sendTo(conn, packChan)
 
@@ -352,27 +320,29 @@ func main() {
 						}
 					}
 
-					rSockets(func() {
-						for k, v := range sockets {
-							// 向其他所有客户端(除了自己)转发消息
-							if k != sid {
-								v.PackChan <- &lib.Packet{
-									Kind: pack.Kind,
-									Data: pack.Data,
-								}
+					msg := &lib.Msg{}
+					if err := lib.Unmarshal(pack.Data, msg); err != nil {
+						if bytes, err := lib.Marshal(&lib.ErrRes{Code: -10016}); err != nil {
+							return err
+						} else {
+							packChan <- &lib.Packet{
+								Kind: lib.PackKind_ERR,
+								Data: bytes,
 							}
+							return nil
 						}
-					})
+					}
+
+					if err := storage.NewMsg(&Message{
+						Kind: uint32(lib.MsgKind_TEXT),
+						From: msg.From,
+						To:   msg.To,
+						Data: msg.Data,
+					}); err != nil {
+						return err
+					}
 				}
 				return nil
-			},
-			func() {
-				// 从当前方法返回时，关闭连接
-				conn.Close()
-				// 删除连接
-				wSockets(func() {
-					delete(sockets, sid)
-				})
 			})
 	}
 }

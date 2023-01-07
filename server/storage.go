@@ -26,6 +26,14 @@ type Account struct {
 	PasshashAndBcrypt string
 }
 
+type Message struct {
+	Id   uint64 `gorm:"primaryKey"`
+	Kind uint32
+	From string
+	To   string
+	Data []byte
+}
+
 type Storage struct {
 	db *gorm.DB
 }
@@ -37,7 +45,8 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 		s.db = db
 		if err := s.db.Transaction(func(tx *gorm.DB) error {
 			var account Account
-			if err := tx.AutoMigrate(&account); err != nil {
+			var msg Message
+			if err := tx.AutoMigrate(&account, &msg); err != nil {
 				return err
 			}
 			return nil
@@ -77,5 +86,10 @@ func (s *Storage) GetUsers(self string) (users []string, err error) {
 			users = append(users, accounts[i].Username)
 		}
 	}
+	return
+}
+
+func (s *Storage) NewMsg(msg *Message) (err error) {
+	err = s.db.Create(msg).Error
 	return
 }

@@ -112,10 +112,6 @@ func main() {
 				resChan <- &response_t{pack: pack}
 			}
 			return nil
-		},
-		func() {
-			// 从当前方法返回时，关闭连接
-			conn.Close()
 		})
 
 	var m tea.Model
