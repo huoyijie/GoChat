@@ -67,13 +67,11 @@ func (m signin) Init() tea.Cmd {
 }
 
 func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m, cmd := m.base.Update(msg); cmd != nil {
-		return m, cmd
-	}
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "q", "esc", "ctrl+c":
+			return m, tea.Quit
 		// Change cursor mode
 		case "ctrl+r":
 			m.cursorMode++

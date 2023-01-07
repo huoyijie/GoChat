@@ -96,10 +96,6 @@ func (m users) Init() tea.Cmd {
 }
 
 func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m, cmd := m.base.Update(msg); cmd != nil {
-		return m, cmd
-	}
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
@@ -107,6 +103,8 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
+		case "q", "esc", "ctrl+c":
+			return m, tea.Quit
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
 			if !ok {

@@ -21,10 +21,11 @@ type home struct {
 	choice int
 }
 
+func (m home) Init() tea.Cmd {
+	return nil
+}
+
 func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m, cmd := m.base.Update(msg); cmd != nil {
-		return m, cmd
-	}
 	return updateChoices(msg, m)
 }
 
@@ -55,6 +56,8 @@ func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "q", "esc", "ctrl+c":
+			return m, tea.Quit
 		case "j", "down":
 			m.choice++
 			if m.choice > len(choices)-1 {
