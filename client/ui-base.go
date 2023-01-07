@@ -2,9 +2,11 @@ package main
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/huoyijie/GoChat/lib"
 )
 
 type base struct {
+	msgChan <-chan *lib.Msg
 	reqChan chan<- *request_t
 	storage *Storage
 }

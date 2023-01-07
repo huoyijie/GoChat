@@ -89,6 +89,7 @@ func main() {
 	// 连接遇到错误则退出进程
 	lib.FatalNotNil(err)
 
+	msgChan := make(chan *lib.Msg)
 	reqChan := make(chan *request_t)
 	resChan := make(chan *response_t)
 	go sendTo(conn, reqChan, resChan)
@@ -101,7 +102,7 @@ func main() {
 			case lib.PackKind_MSG:
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
-					lib.PrintMessage(msg)
+					msgChan <- msg
 				}
 			case lib.PackKind_ERR:
 				errRes := &lib.ErrRes{}
@@ -114,30 +115,31 @@ func main() {
 			return nil
 		})
 
+	b := base{reqChan: reqChan, msgChan: msgChan, storage: storage}
 	var m tea.Model
 	if kv, err := storage.GetValue("token"); err != nil {
-		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+		m = home{choice: CHOICE_SIGNIN, base: b}
 	} else if token, err := base64.StdEncoding.DecodeString(kv.Value); err != nil {
-		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+		m = home{choice: CHOICE_SIGNIN, base: b}
 	} else if bytes, err := lib.Marshal(&lib.Token{Token: token}); err != nil {
-		m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+		m = home{choice: CHOICE_SIGNIN, base: b}
 	} else {
 		req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes}, true)
 		reqChan <- req
 		res := <-req.c
 		if !res.ok() {
-			m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+			m = home{choice: CHOICE_SIGNIN, base: b}
 		} else {
 			tokenRes := &lib.TokenRes{}
 			if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil || tokenRes.Code < 0 {
-				m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+				m = home{choice: CHOICE_SIGNIN, base: b}
 			} else if err := storage.NewKVS([]KeyValue{
 				{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
 				{Key: "username", Value: tokenRes.Username},
 				{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)}}); err != nil {
-				m = home{choice: CHOICE_SIGNIN, base: base{reqChan: reqChan, storage: storage}}
+				m = home{choice: CHOICE_SIGNIN, base: b}
 			} else {
-				m = initialUsers(base{reqChan: reqChan, storage: storage})
+				m = initialUsers(b)
 			}
 		}
 	}

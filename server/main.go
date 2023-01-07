@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"net"
 	"path/filepath"
+	"time"
 
 	"github.com/huoyijie/GoChat/lib"
 	"golang.org/x/crypto/bcrypt"
@@ -344,5 +345,30 @@ func main() {
 				}
 				return nil
 			})
+
+		go func(accUN *string) {
+			interval := time.NewTicker(100 * time.Millisecond)
+			defer interval.Stop()
+
+			for range interval.C {
+				if len(*accUN) > 0 {
+					msgList, _ := storage.GetMsgList(*accUN)
+					for i := range msgList {
+						msg := &lib.Msg{
+							Id:   msgList[i].Id,
+							Kind: lib.MsgKind(msgList[i].Kind),
+							From: msgList[i].From,
+							To:   msgList[i].To,
+							Data: msgList[i].Data,
+						}
+						bytes, _ := lib.Marshal(msg)
+						packChan <- &lib.Packet{
+							Kind: lib.PackKind_MSG,
+							Data: bytes,
+						}
+					}
+				}
+			}
+		}(&accUN)
 	}
 }

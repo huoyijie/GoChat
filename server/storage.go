@@ -70,7 +70,7 @@ func (s *Storage) GetAccountById(id uint64) (account *Account, err error) {
 
 func (s *Storage) GetAccountByUN(username string) (account *Account, err error) {
 	account = &Account{Username: username}
-	err = s.db.First(account).Error
+	err = s.db.Where(account).First(account).Error
 	return
 }
 
@@ -91,5 +91,20 @@ func (s *Storage) GetUsers(self string) (users []string, err error) {
 
 func (s *Storage) NewMsg(msg *Message) (err error) {
 	err = s.db.Create(msg).Error
+	return
+}
+
+func (s *Storage) GetMsgList(to string) (msgList []Message, err error) {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("`to` = ?", to).Find(&msgList).Order("id").Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("`to` = ?", to).Delete(&Message{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 	return
 }

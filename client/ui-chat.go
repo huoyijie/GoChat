@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -13,8 +14,15 @@ import (
 )
 
 type (
-	errMsg error
+	errMsg  error
+	tickMsg struct{}
 )
+
+func tick() tea.Cmd {
+	return tea.Tick(time.Second, func(time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
 
 type chat struct {
 	base
@@ -64,7 +72,7 @@ func initialChat(to string, base base) chat {
 }
 
 func (m chat) Init() tea.Cmd {
-	return textarea.Blink
+	return tea.Batch(tick(), textarea.Blink)
 }
 
 func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -83,6 +91,10 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			fmt.Println(m.textarea.Value())
 			return m, tea.Quit
 		case tea.KeyEnter:
+			if len(strings.TrimSpace(m.textarea.Value())) == 0 {
+				return m, nil
+			}
+
 			chatMsg := &lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}
 			bytes, err := lib.Marshal(chatMsg)
 			if err != nil {
@@ -97,6 +109,22 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 			m.textarea.Reset()
 		}
+
+	case tickMsg:
+		// loop:
+		// 	for {
+		// 		timeout := time.NewTimer(50 * time.Millisecond)
+		// 		select {
+		// 		case message := <-m.base.msgChan:
+		// 			timeout.Stop()
+		// 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", message.From))+string(message.Data))
+		// 			m.viewport.SetContent(strings.Join(m.messages, "\n"))
+		// 			m.viewport.GotoBottom()
+		// 		case <-timeout.C:
+		// 			break loop
+		// 		}
+		// 	}
+		return m, tick()
 
 	// We handle errors just like any other message
 	case errMsg:
