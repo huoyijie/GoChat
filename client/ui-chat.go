@@ -144,3 +144,5 @@ func (m chat) View() string {
 	) + "\n\n"
 	return indent.String("\n"+s, 4)
 }
+
+var _ tea.Model = (*chat)(nil)
