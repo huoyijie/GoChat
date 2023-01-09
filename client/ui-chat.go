@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -14,14 +13,13 @@ import (
 )
 
 type (
-	errMsg  error
-	tickMsg struct{}
+	errMsg error
 )
 
-func tick() tea.Cmd {
-	return tea.Tick(time.Second, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func recvMsg(msgChan <-chan *lib.Msg) tea.Cmd {
+	return func() tea.Msg {
+		return <-msgChan
+	}
 }
 
 type chat struct {
@@ -72,7 +70,7 @@ func initialChat(to string, base base) chat {
 }
 
 func (m chat) Init() tea.Cmd {
-	return tea.Batch(tick(), textarea.Blink)
+	return tea.Batch(recvMsg(m.msgChan), textarea.Blink)
 }
 
 func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -102,7 +100,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_MSG, Data: bytes}, true)
-			m.base.reqChan <- req
+			m.reqChan <- req
 
 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", m.from))+m.textarea.Value())
 			m.viewport.SetContent(strings.Join(m.messages, "\n"))
@@ -110,21 +108,11 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 		}
 
-	case tickMsg:
-		// loop:
-		// 	for {
-		// 		timeout := time.NewTimer(50 * time.Millisecond)
-		// 		select {
-		// 		case message := <-m.base.msgChan:
-		// 			timeout.Stop()
-		// 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", message.From))+string(message.Data))
-		// 			m.viewport.SetContent(strings.Join(m.messages, "\n"))
-		// 			m.viewport.GotoBottom()
-		// 		case <-timeout.C:
-		// 			break loop
-		// 		}
-		// 	}
-		return m, tick()
+	case *lib.Msg:
+		m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", msg.From))+string(msg.Data))
+		m.viewport.SetContent(strings.Join(m.messages, "\n"))
+		m.viewport.GotoBottom()
+		return m, recvMsg(m.msgChan)
 
 	// We handle errors just like any other message
 	case errMsg:

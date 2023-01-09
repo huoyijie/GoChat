@@ -127,7 +127,7 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes}, true)
-				m.base.reqChan <- req
+				m.reqChan <- req
 
 				res := <-req.c
 				if !res.ok() {
@@ -145,7 +145,7 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				if err := m.base.storage.NewKVS([]KeyValue{
+				if err := m.storage.NewKVS([]KeyValue{
 					{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
 					{Key: "username", Value: tokenRes.Username},
 					{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
