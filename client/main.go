@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -77,11 +78,19 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 	}
 }
 
+func dbName() string {
+	dbName, found := os.LookupEnv("DB_NAME")
+	if !found {
+		dbName = "client.db"
+	}
+	return dbName
+}
+
 func main() {
 	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
 	go lib.SignalHandler()
 
-	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, "client.db"))
+	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, dbName()))
 	lib.FatalNotNil(err)
 
 	// 客户端进行 tcp 拨号，请求连接 127.0.0.1:8888
