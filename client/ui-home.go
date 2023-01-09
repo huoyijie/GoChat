@@ -75,7 +75,7 @@ func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 			} else {
 				next = initialSignup(m.base)
 			}
-			return next, nil
+			return next, next.Init()
 		}
 	}
 	return m, nil

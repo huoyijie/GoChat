@@ -137,7 +137,8 @@ func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 
-				return initialUsers(m.base), nil
+				users := initialUsers(m.base)
+				return users, users.Init()
 			}
 
 			// Cycle indexes

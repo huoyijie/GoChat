@@ -110,7 +110,8 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !ok {
 				return m, tea.Quit
 			}
-			return initialChat(string(i), m.base), nil
+			chat := initialChat(string(i), m.base)
+			return chat, chat.Init()
 		}
 	}
 
