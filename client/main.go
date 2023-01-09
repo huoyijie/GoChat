@@ -67,9 +67,9 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 				delete(requests, res.pack.Id)
 			}
 		case <-timeoutTicker.C:
-			for id, request := range requests {
-				if time.Now().After(request.deadline) {
-					request.c <- new(response_t)
+			for id, req := range requests {
+				if time.Now().After(req.deadline) {
+					req.c <- new(response_t)
 					delete(requests, id)
 				}
 			}
