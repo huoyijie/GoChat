@@ -102,7 +102,9 @@ func main() {
 			case lib.PackKind_MSG:
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
-					msgChan <- msg
+					go func() {
+						msgChan <- msg
+					}()
 				}
 			case lib.PackKind_ERR:
 				errRes := &lib.ErrRes{}

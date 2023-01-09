@@ -19,10 +19,11 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet) {
 		}
 
 		bytes, err := lib.MarshalPack(pack)
-		if err == nil {
-			_, err = conn.Write(bytes)
+		if err != nil {
+			return
 		}
 
+		_, err = conn.Write(bytes)
 		if err != nil {
 			return
 		}
