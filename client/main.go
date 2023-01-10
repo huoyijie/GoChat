@@ -93,7 +93,7 @@ func renderHome(reqChan chan<- *request_t, storage *Storage) (renderHome bool) {
 		return true
 	}
 
-	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
+	req := newRequest(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
 	reqChan <- req
 	res := <-req.c
 	if !res.ok() { // 验证 token 请求超时

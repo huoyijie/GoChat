@@ -21,21 +21,25 @@ var gormLogger = logger.New(
 	},
 )
 
+// 存储 key/Value 表
 type KeyValue struct {
 	Key   string `gorm:"primaryKey"`
 	Value string
 }
 
+// 客户端本地存储
 type Storage struct {
 	db *gorm.DB
 }
 
 func (s *Storage) Init(filePath string) (*Storage, error) {
+	// 创建并打开数据库存储文件
 	if db, err := gorm.Open(sqlite.Open(filePath), &gorm.Config{Logger: gormLogger}); err != nil {
 		return nil, err
 	} else {
 		s.db = db
 		if err := s.db.Transaction(func(tx *gorm.DB) error {
+			// 自动根据模型更新表结构
 			var kv KeyValue
 			if err := tx.AutoMigrate(&kv); err != nil {
 				return err
@@ -48,6 +52,7 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 	}
 }
 
+// 批量插入 key/value 键值对
 func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
 	err = s.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "key"}},
@@ -56,6 +61,7 @@ func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
 	return
 }
 
+// 根据 key 查询 value
 func (s *Storage) GetValue(key string) (kv *KeyValue, err error) {
 	kv = &KeyValue{Key: key}
 	err = s.db.First(kv).Error

@@ -126,7 +126,7 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 
-				req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes})
+				req := newRequest(&lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes})
 				m.reqChan <- req
 
 				res := <-req.c

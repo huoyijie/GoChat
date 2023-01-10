@@ -56,7 +56,7 @@ type users struct {
 }
 
 func initialUsers(base base) users {
-	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_USERS})
+	req := newRequest(&lib.Packet{Kind: lib.PackKind_USERS})
 	base.reqChan <- req
 
 	res := <-req.c
