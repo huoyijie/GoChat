@@ -51,6 +51,8 @@ message TokenRes {
   bytes  token    = 4;
 }
 
+message Users {}
+
 message UsersRes {
   int32           code  = 1;
   repeated string users = 2;

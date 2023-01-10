@@ -1,0 +1,44 @@
+package main
+
+import (
+	"errors"
+
+	"github.com/huoyijie/GoChat/lib"
+	"google.golang.org/protobuf/proto"
+)
+
+func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Message) (err error) {
+	var kind lib.PackKind
+	switch req.(type) {
+	case *lib.Signup:
+		kind = lib.PackKind_SIGNUP
+	case *lib.Signin:
+		kind = lib.PackKind_SIGNIN
+	case *lib.Token:
+		kind = lib.PackKind_TOKEN
+	case *lib.Users:
+		kind = lib.PackKind_USERS
+	default:
+		return errors.New("invalid kind of packet")
+	}
+
+	bytes, err := lib.Marshal(req)
+	if err != nil { // 序列化请求错误
+		return
+	}
+
+	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
+	reqChan <- request
+	response := <-request.c
+	if !response.ok() { // 同步请求超时
+		err = errors.New("请求超时")
+		return
+	}
+
+	err = lib.Unmarshal(response.pack.Data, res)
+	return
+}
+
+func sendPacket() {
+
+}

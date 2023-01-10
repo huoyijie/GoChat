@@ -107,30 +107,16 @@ func renderHome(reqChan chan<- *request_t, storage *Storage) (renderHome bool) {
 		return true
 	}
 
-	bytes, err := lib.Marshal(&lib.Token{Token: token})
-	if err != nil { // 序列化 token 错误
-		return true
-	}
-
-	req := newRequest(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
-	reqChan <- req
-	res := <-req.c
-	if !res.ok() { // 验证 token 请求超时
-		return true
-	}
-
 	tokenRes := &lib.TokenRes{}
-	err = lib.Unmarshal(res.pack.Data, tokenRes)
-	if err != nil || tokenRes.Code < 0 { // 验证 token 响应错误或者 token 未验证成功
+	if err = handlePacket(reqChan, &lib.Token{Token: token}, tokenRes); err != nil || tokenRes.Code < 0 { // 验证 token 请求错误，或者 token 未验证成功
 		return true
 	}
 
-	err = storage.NewKVS([]KeyValue{
+	if err = storage.NewKVS([]KeyValue{
 		{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
 		{Key: "username", Value: tokenRes.Username},
 		{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
-	})
-	if err != nil { // token 验证成功，但是写入存储错误
+	}); err != nil { // token 验证成功，但是写入存储错误
 		return true
 	}
 

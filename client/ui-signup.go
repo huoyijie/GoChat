@@ -118,29 +118,15 @@ func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
-				bytes, err := lib.Marshal(&lib.Signup{Auth: &lib.Auth{
-					Username: m.inputs[0].Value(),
-					Passhash: passhash[:],
-				}})
-				if err != nil {
-					return m, tea.Quit
-				}
-
-				req := newRequest(&lib.Packet{Kind: lib.PackKind_SIGNUP, Data: bytes})
-				m.reqChan <- req
-
-				res := <-req.c
-				if !res.ok() {
-					m.hint = "注册帐号超时"
-					return m, nil
-				}
 
 				tokenRes := &lib.TokenRes{}
-				if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil {
-					return m, tea.Quit
-				}
-
-				if tokenRes.Code < 0 {
+				if err := handlePacket(m.reqChan, &lib.Signup{Auth: &lib.Auth{
+					Username: m.inputs[0].Value(),
+					Passhash: passhash[:],
+				}}, tokenRes); err != nil {
+					m.hint = fmt.Sprintf("注册帐号异常: %v", err)
+					return m, nil
+				} else if tokenRes.Code < 0 {
 					m.hint = fmt.Sprintf("注册帐号异常: %d", tokenRes.Code)
 					return m, nil
 				}
