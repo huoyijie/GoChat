@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// 处理同步请求
 func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Message) (err error) {
 	var kind lib.PackKind
 	switch req.(type) {
@@ -39,6 +40,22 @@ func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Messag
 	return
 }
 
-func sendPacket() {
+// 发送非同步请求
+func sendPacket(reqChan chan<- *request_t, req proto.Message) (err error) {
+	var kind lib.PackKind
+	switch req.(type) {
+	case *lib.Msg:
+		kind = lib.PackKind_MSG
+	default:
+		return errors.New("invalid kind of packet")
+	}
 
+	bytes, err := lib.Marshal(req)
+	if err != nil {
+		return
+	}
+
+	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
+	reqChan <- request
+	return
 }

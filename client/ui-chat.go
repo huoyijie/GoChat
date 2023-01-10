@@ -93,14 +93,9 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			chatMsg := &lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}
-			bytes, err := lib.Marshal(chatMsg)
-			if err != nil {
+			if err := sendPacket(m.reqChan, &lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}); err != nil {
 				return m, tea.Quit
 			}
-
-			req := newRequest(&lib.Packet{Kind: lib.PackKind_MSG, Data: bytes})
-			m.reqChan <- req
 
 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", m.from))+m.textarea.Value())
 			m.viewport.SetContent(strings.Join(m.messages, "\n"))
