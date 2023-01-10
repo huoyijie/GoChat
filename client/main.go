@@ -76,34 +76,57 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 		})
 }
 
+// home 页面是选择注册或者登录页面。如果本地存储中 token 验证合法后可自动登录并刷新本地 token，然后进入用户列表页面。如果本地没有 token，或者验证 token 失败，则进入 home 页面。
+func renderHome(reqChan chan<- *request_t, storage *Storage) (renderHome bool) {
+	kv, err := storage.GetValue("token")
+	if err != nil { // 未登录过
+		return true
+	}
+
+	token, err := base64.StdEncoding.DecodeString(kv.Value)
+	if err != nil { // token 解析错误
+		return true
+	}
+
+	bytes, err := lib.Marshal(&lib.Token{Token: token})
+	if err != nil { // 序列化 token 错误
+		return true
+	}
+
+	req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
+	reqChan <- req
+	res := <-req.c
+	if !res.ok() { // 验证 token 请求超时
+		return true
+	}
+
+	tokenRes := &lib.TokenRes{}
+	err = lib.Unmarshal(res.pack.Data, tokenRes)
+	if err != nil || tokenRes.Code < 0 { // 验证 token 响应错误或者 token 未验证成功
+		return true
+	}
+
+	err = storage.NewKVS([]KeyValue{
+		{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
+		{Key: "username", Value: tokenRes.Username},
+		{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
+	})
+	if err != nil { // token 验证成功，但是写入存储错误
+		return true
+	}
+
+	return
+}
+
+// 渲染 UI
 func renderUI(reqChan chan<- *request_t, msgChan <-chan *lib.Msg, storage *Storage) {
 	b := base{reqChan: reqChan, msgChan: msgChan, storage: storage}
+
 	var m tea.Model
-	if kv, err := storage.GetValue("token"); err != nil {
-		m = home{choice: CHOICE_SIGNIN, base: b}
-	} else if token, err := base64.StdEncoding.DecodeString(kv.Value); err != nil {
-		m = home{choice: CHOICE_SIGNIN, base: b}
-	} else if bytes, err := lib.Marshal(&lib.Token{Token: token}); err != nil {
+	if renderHome(reqChan, storage) {
 		m = home{choice: CHOICE_SIGNIN, base: b}
 	} else {
-		req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
-		reqChan <- req
-		res := <-req.c
-		if !res.ok() {
-			m = home{choice: CHOICE_SIGNIN, base: b}
-		} else {
-			tokenRes := &lib.TokenRes{}
-			if err := lib.Unmarshal(res.pack.Data, tokenRes); err != nil || tokenRes.Code < 0 {
-				m = home{choice: CHOICE_SIGNIN, base: b}
-			} else if err := storage.NewKVS([]KeyValue{
-				{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
-				{Key: "username", Value: tokenRes.Username},
-				{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)}}); err != nil {
-				m = home{choice: CHOICE_SIGNIN, base: b}
-			} else {
-				m = initialUsers(b)
-			}
-		}
+		m = initialUsers(b)
 	}
 
 	p := tea.NewProgram(m)
