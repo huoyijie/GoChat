@@ -12,39 +12,52 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
+// 向服务器发送 packet。如果是同步请求，会通过 request.c 返回服务器响应数据，同时也会检查同步请求是否已超时。
 func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t) {
 	var id uint64
+	// 登记所有的同步请求，并等待响应
 	requests := make(map[uint64]*request_t)
+	// 同步请求超时检查间隔 50ms
 	timeoutTicker := time.NewTicker(50 * time.Millisecond)
 	defer timeoutTicker.Stop()
 
 	for {
 		select {
-		case req := <-reqChan:
+		// 有服务器请求进来
+		case request := <-reqChan:
+			// 分配 packet.id
 			id++
-			req.pack.Id = id
-			bytes, err := lib.MarshalPack(req.pack)
-			if err == nil {
-				_, err = conn.Write(bytes)
-			}
+			request.pack.Id = id
 
-			if err != nil {
+			bytes, err := lib.MarshalPack(request.pack)
+			if err != nil { // 序列化 packet 错误
 				return
 			}
 
-			if req.sync() {
-				req.deadline = time.Now().Add(5 * time.Second)
-				requests[req.pack.Id] = req
+			if _, err = conn.Write(bytes); err != nil { // 发送字节数据错误
+				return
 			}
-		case res := <-resChan:
-			if req, ok := requests[res.pack.Id]; ok {
-				req.c <- res
-				delete(requests, res.pack.Id)
+
+			if request.sync() { // 登记同步请求
+				// 如果 5s 内服务器没有返回，则超时
+				request.deadline = time.Now().Add(5 * time.Second)
+				requests[request.pack.Id] = request
 			}
+		// 通过 resChan 接收从 recvFrom 协程发送过来的响应对象
+		case response := <-resChan:
+			if request, ok := requests[response.pack.Id]; ok {
+				// 通过 request.c 返回服务器响应数据
+				request.c <- response
+				// 删除登记的同步请求
+				delete(requests, response.pack.Id)
+			}
+		// 每隔 50ms 检查是否有超时的同步请求
 		case <-timeoutTicker.C:
-			for id, req := range requests {
-				if time.Now().After(req.deadline) {
-					req.c <- newResponse(nil)
+			for id, request := range requests {
+				if time.Now().After(request.deadline) {
+					// 请求超时，返回空响应对象
+					request.c <- newResponse(nil)
+					// 删除登记的同步请求
 					delete(requests, id)
 				}
 			}
@@ -52,11 +65,14 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 	}
 }
 
+// 从服务器接收 packet 并进行处理
 func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t) {
 	lib.RecvFrom(
 		conn,
+		// 从服务器接收 packet 的处理函数
 		func(pack *lib.Packet) error {
 			switch pack.Kind {
+			// 当前连接的登录用户收到新未读消息
 			case lib.PackKind_MSG:
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
@@ -64,12 +80,15 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 						msgChan <- msg
 					}()
 				}
+			// 当前连接遇到系统异常，退出进程
 			case lib.PackKind_ERR:
 				errRes := &lib.ErrRes{}
 				if err := lib.Unmarshal(pack.Data, errRes); err == nil {
 					lib.FatalNotNil(fmt.Errorf("系统异常: %d", errRes.Code))
 				}
+			// 收到同步请求的响应
 			case lib.PackKind_RES:
+				// 当前是在 recvFrom 协程里，需要把 packet 封装为 response_t 对象，并通过 resChan channel 发到 sendTo 协程
 				resChan <- newResponse(pack)
 			}
 			return nil
