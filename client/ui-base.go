@@ -72,6 +72,7 @@ func passwordValidator(s string) (err error) {
 	return
 }
 
+// 每个 ui 对象可嵌入 base 对象，并可通过 msgChan 接收新的未读消息，通过 reqChan 向服务器发送请求，通过 storage 读写本地存储
 type base struct {
 	msgChan <-chan *lib.Msg
 	reqChan chan<- *request_t
