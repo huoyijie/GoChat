@@ -4,17 +4,26 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"log"
+	"os"
 	"time"
 
 	"github.com/huoyijie/GoChat/lib"
 )
 
 const (
-	SECRET_KEY = "3e367a60ddc0699ea2f486717d5dcd174c4dee0bcf1855065ab74c348e550b78"
+	DEFAULT_SECRET_KEY = "3e367a60ddc0699ea2f486717d5dcd174c4dee0bcf1855065ab74c348e550b78"
 )
 
+func secretKey() (secretKey string) {
+	secretKey, found := os.LookupEnv("SECRET_KEY")
+	if !found {
+		secretKey = DEFAULT_SECRET_KEY
+	}
+	return
+}
+
 func GetSecretKey() *[32]byte {
-	key, err := hex.DecodeString(SECRET_KEY)
+	key, err := hex.DecodeString(secretKey())
 	if err != nil {
 		log.Fatal(err)
 	}
