@@ -120,7 +120,7 @@ func main() {
 				if err := lib.Unmarshal(pack.Data, errRes); err == nil {
 					lib.FatalNotNil(fmt.Errorf("系统异常: %d", errRes.Code))
 				}
-			default:
+			case lib.PackKind_RES:
 				resChan <- &response_t{pack: pack}
 			}
 			return nil

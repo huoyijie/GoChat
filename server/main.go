@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -47,6 +48,9 @@ func main() {
 	// 输出日志
 	lib.LogMessage("Listening on", addr)
 
+	// 创建 snowflake Node
+	node, err := snowflake.NewNode(1)
+	lib.FatalNotNil(err)
 	// 循环接受客户端连接
 	for {
 		// 每当有客户端连接时，ln.Accept 会返回新的连接 conn
@@ -75,7 +79,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNUP,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -89,7 +93,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNUP,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -106,7 +110,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNUP,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -123,7 +127,7 @@ func main() {
 					} else {
 						packChan <- &lib.Packet{
 							Id:   pack.Id,
-							Kind: lib.PackKind_SIGNUP,
+							Kind: lib.PackKind_RES,
 							Data: bytes,
 						}
 						accId = account.Id
@@ -137,7 +141,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -150,7 +154,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -161,7 +165,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -172,7 +176,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -183,7 +187,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -194,7 +198,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_TOKEN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							accId = account.Id
@@ -209,7 +213,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -222,7 +226,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -233,7 +237,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -244,7 +248,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -255,7 +259,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -266,7 +270,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_SIGNIN,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							accId = account.Id
@@ -280,7 +284,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -293,7 +297,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 							return nil
@@ -304,7 +308,7 @@ func main() {
 						} else {
 							packChan <- &lib.Packet{
 								Id:   pack.Id,
-								Kind: lib.PackKind_USERS,
+								Kind: lib.PackKind_RES,
 								Data: bytes,
 							}
 						}
@@ -335,7 +339,9 @@ func main() {
 						}
 					}
 
+					// 生成消息 ID
 					if err := storage.NewMsg(&Message{
+						Id:   int64(node.Generate()),
 						Kind: uint32(lib.MsgKind_TEXT),
 						From: msg.From,
 						To:   msg.To,

@@ -27,7 +27,7 @@ type Account struct {
 }
 
 type Message struct {
-	Id   uint64 `gorm:"primaryKey"`
+	Id   int64 `gorm:"primaryKey"`
 	Kind uint32
 	From string
 	To   string

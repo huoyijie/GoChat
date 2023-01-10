@@ -7,19 +7,23 @@ package lib;
 option go_package = "github.com/huoyijie/GoChat/lib";
 
 enum PackKind {
-  PING   = 0;
-  PONG   = 1;
-  SIGNUP = 2;
-  SIGNIN = 3;
-  TOKEN  = 4;
-  USERS  = 5;
-  MSG    = 6;
-  ERR    = 7;
+  // Server
+  PONG   = 0;
+  ERR    = 1;
+  MSG    = 2;
+  RES    = 3;
+
+  // Client
+  PING   = 4;
+  SIGNUP = 5;
+  SIGNIN = 6;
+  TOKEN  = 7;
+  USERS  = 8;
 }
 
 message Packet {
-  uint64   id   = 1;
-  PackKind kind = 2;
+  PackKind kind = 1;
+  uint64   id   = 2;
   bytes    data = 3;
 }
 
@@ -57,7 +61,7 @@ enum MsgKind {
 }
 
 message Msg {
-  uint64  id   = 1;
+  int64   id   = 1;
   MsgKind kind = 2;
   string  from = 3;
   string  to   = 4;
