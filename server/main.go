@@ -41,12 +41,12 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 			case lib.PackKind_SIGNUP:
 				signup := &lib.Signup{}
 				if err := lib.Unmarshal(pack.Data, signup); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10000})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
 				}
 
 				passhashAndBcrypt, err := bcrypt.GenerateFromPassword(signup.Auth.Passhash, 14)
 				if err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10001})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Gen.Val()})
 				}
 
 				account := &Account{
@@ -54,12 +54,12 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 					PasshashAndBcrypt: base64.StdEncoding.EncodeToString(passhashAndBcrypt),
 				}
 				if err := storage.NewAccount(account); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10002})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Exist.Val()})
 				}
 
 				token, err := GenerateToken(account.Id)
 				if err != nil {
-					return err
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
 				}
 
 				err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
@@ -71,17 +71,16 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 			case lib.PackKind_TOKEN:
 				token := &lib.Token{}
 				if err := lib.Unmarshal(pack.Data, token); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10003})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
 				}
-
 				if id, expired, err := ParseToken(token.Token); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10004})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Parse_Token.Val()})
 				} else if expired {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10005})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Token_Expired.Val()})
 				} else if account, err := storage.GetAccountById(id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10006})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
 				} else if token, err := GenerateToken(account.Id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10007})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
 				} else {
 					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
 					if err != nil {
@@ -93,17 +92,17 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 			case lib.PackKind_SIGNIN:
 				signin := &lib.Signin{}
 				if err := lib.Unmarshal(pack.Data, signin); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10008})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
 				}
 
 				if account, err := storage.GetAccountByUN(signin.Auth.Username); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10009})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
 				} else if passhashAndBcrypt, err := base64.StdEncoding.DecodeString(account.PasshashAndBcrypt); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10010})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Base64_Decode.Val()})
 				} else if err := bcrypt.CompareHashAndPassword(passhashAndBcrypt, signin.Auth.Passhash); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10011})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Compare.Val()})
 				} else if token, err := GenerateToken(account.Id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10012})
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
 				} else {
 					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
 					if err != nil {
@@ -114,22 +113,22 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 				}
 			case lib.PackKind_USERS:
 				if *accId == 0 || len(*accUN) == 0 {
-					return handlePacket(packChan, pack, &lib.UsersRes{Code: -10013})
+					return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Forbidden.Val()})
 				}
 
 				if users, err := storage.GetUsers(*accUN); err != nil {
-					return handlePacket(packChan, pack, &lib.UsersRes{Code: -10014})
+					return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Get_Users.Val()})
 				} else {
 					return handlePacket(packChan, pack, &lib.UsersRes{Users: users})
 				}
 			case lib.PackKind_MSG:
 				if *accId == 0 || len(*accUN) == 0 {
-					return sendPacket(packChan, &lib.ErrRes{Code: -10015})
+					return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Forbidden.Val()})
 				}
 
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err != nil {
-					return sendPacket(packChan, &lib.ErrRes{Code: -10016})
+					return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Unmarshal.Val()})
 				}
 
 				return storage.NewMsg(&Message{
