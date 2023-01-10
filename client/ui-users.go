@@ -103,7 +103,7 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case "q", "esc", "ctrl+c":
+		case "esc", "ctrl+c":
 			return m, tea.Quit
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
