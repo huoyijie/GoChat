@@ -41,30 +41,12 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 			case lib.PackKind_SIGNUP:
 				signup := &lib.Signup{}
 				if err := lib.Unmarshal(pack.Data, signup); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10000}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10000})
 				}
 
 				passhashAndBcrypt, err := bcrypt.GenerateFromPassword(signup.Auth.Passhash, 14)
 				if err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10001}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10001})
 				}
 
 				account := &Account{
@@ -72,16 +54,7 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 					PasshashAndBcrypt: base64.StdEncoding.EncodeToString(passhashAndBcrypt),
 				}
 				if err := storage.NewAccount(account); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10002}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10002})
 				}
 
 				token, err := GenerateToken(account.Id)
@@ -89,233 +62,84 @@ func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accI
 					return err
 				}
 
-				if bytes, err := lib.Marshal(&lib.TokenRes{Id: account.Id, Username: account.Username, Token: token}); err != nil {
+				err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
+				if err != nil {
 					return err
+				}
+				*accId = account.Id
+				*accUN = account.Username
+			case lib.PackKind_TOKEN:
+				token := &lib.Token{}
+				if err := lib.Unmarshal(pack.Data, token); err != nil {
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10003})
+				}
+
+				if id, expired, err := ParseToken(token.Token); err != nil {
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10004})
+				} else if expired {
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10005})
+				} else if account, err := storage.GetAccountById(id); err != nil {
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10006})
+				} else if token, err := GenerateToken(account.Id); err != nil {
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10007})
 				} else {
-					packChan <- &lib.Packet{
-						Id:   pack.Id,
-						Kind: lib.PackKind_RES,
-						Data: bytes,
+					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
+					if err != nil {
+						return err
 					}
 					*accId = account.Id
 					*accUN = account.Username
 				}
-			case lib.PackKind_TOKEN:
-				token := &lib.Token{}
-				if err := lib.Unmarshal(pack.Data, token); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10003}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
-				}
-
-				if id, expired, err := ParseToken(token.Token); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10004}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
-				} else if expired {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10005}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
-				} else if account, err := storage.GetAccountById(id); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10006}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
-				} else if token, err := GenerateToken(account.Id); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10007}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
-				} else {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Id: account.Id, Username: account.Username, Token: token}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						*accId = account.Id
-						*accUN = account.Username
-					}
-				}
 			case lib.PackKind_SIGNIN:
 				signin := &lib.Signin{}
 				if err := lib.Unmarshal(pack.Data, signin); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10008}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10008})
 				}
 
 				if account, err := storage.GetAccountByUN(signin.Auth.Username); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10009}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10009})
 				} else if passhashAndBcrypt, err := base64.StdEncoding.DecodeString(account.PasshashAndBcrypt); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10010}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10010})
 				} else if err := bcrypt.CompareHashAndPassword(passhashAndBcrypt, signin.Auth.Passhash); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10011}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10011})
 				} else if token, err := GenerateToken(account.Id); err != nil {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Code: -10012}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.TokenRes{Code: -10012})
 				} else {
-					if bytes, err := lib.Marshal(&lib.TokenRes{Id: account.Id, Username: account.Username, Token: token}); err != nil {
+					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
+					if err != nil {
 						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						*accId = account.Id
-						*accUN = account.Username
 					}
+					*accId = account.Id
+					*accUN = account.Username
 				}
 			case lib.PackKind_USERS:
 				if *accId == 0 || len(*accUN) == 0 {
-					if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10013}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.UsersRes{Code: -10013})
 				}
 
 				if users, err := storage.GetUsers(*accUN); err != nil {
-					if bytes, err := lib.Marshal(&lib.UsersRes{Code: -10014}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-						return nil
-					}
+					return handlePacket(packChan, pack, &lib.UsersRes{Code: -10014})
 				} else {
-					if bytes, err := lib.Marshal(&lib.UsersRes{Users: users}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Id:   pack.Id,
-							Kind: lib.PackKind_RES,
-							Data: bytes,
-						}
-					}
+					return handlePacket(packChan, pack, &lib.UsersRes{Users: users})
 				}
 			case lib.PackKind_MSG:
 				if *accId == 0 || len(*accUN) == 0 {
-					if bytes, err := lib.Marshal(&lib.ErrRes{Code: -10015}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Kind: lib.PackKind_ERR,
-							Data: bytes,
-						}
-						return nil
-					}
+					return sendPacket(packChan, &lib.ErrRes{Code: -10015})
 				}
 
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err != nil {
-					if bytes, err := lib.Marshal(&lib.ErrRes{Code: -10016}); err != nil {
-						return err
-					} else {
-						packChan <- &lib.Packet{
-							Kind: lib.PackKind_ERR,
-							Data: bytes,
-						}
-						return nil
-					}
+					return sendPacket(packChan, &lib.ErrRes{Code: -10016})
 				}
 
-				// 生成消息 ID
-				if err := storage.NewMsg(&Message{
+				return storage.NewMsg(&Message{
+					// 生成消息 ID
 					Id:   int64(node.Generate()),
 					Kind: uint32(lib.MsgKind_TEXT),
 					From: msg.From,
 					To:   msg.To,
 					Data: msg.Data,
-				}); err != nil {
-					return err
-				}
+				})
 			}
 			return nil
 		})
@@ -334,18 +158,13 @@ func forwardMsgs(packChan chan<- *lib.Packet, storage *Storage, accUN *string) {
 			msgList, _ := storage.GetMsgList(*accUN)
 			for i := range msgList {
 				// 转发消息
-				msg := &lib.Msg{
+				sendPacket(packChan, &lib.Msg{
 					Id:   msgList[i].Id,
 					Kind: lib.MsgKind(msgList[i].Kind),
 					From: msgList[i].From,
 					To:   msgList[i].To,
 					Data: msgList[i].Data,
-				}
-				bytes, _ := lib.Marshal(msg)
-				packChan <- &lib.Packet{
-					Kind: lib.PackKind_MSG,
-					Data: bytes,
-				}
+				})
 			}
 		}
 	}
