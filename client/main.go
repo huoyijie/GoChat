@@ -44,7 +44,7 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 		case <-timeoutTicker.C:
 			for id, req := range requests {
 				if time.Now().After(req.deadline) {
-					req.c <- new(response_t)
+					req.c <- newResponse(nil)
 					delete(requests, id)
 				}
 			}
@@ -70,7 +70,7 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 					lib.FatalNotNil(fmt.Errorf("系统异常: %d", errRes.Code))
 				}
 			case lib.PackKind_RES:
-				resChan <- &response_t{pack: pack}
+				resChan <- newResponse(pack)
 			}
 			return nil
 		})

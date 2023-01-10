@@ -33,6 +33,12 @@ type response_t struct {
 	pack *lib.Packet
 }
 
+// 创建服务器响应对象
+func newResponse(pack *lib.Packet) (response *response_t) {
+	response = &response_t{pack: pack}
+	return
+}
+
 // 判断服务器是否正常返回了数据
 func (response *response_t) ok() bool {
 	return response.pack != nil
