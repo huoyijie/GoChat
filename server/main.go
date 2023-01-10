@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
 )
 
 // 把来自 packChan 的 packet 都发送到 conn
@@ -32,115 +33,154 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet) {
 	}
 }
 
+// 反序列化请求对象
+func unmarshal(packChan chan<- *lib.Packet, pack *lib.Packet, req proto.Message) error {
+	if err := lib.Unmarshal(pack.Data, req); err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
+	}
+	return nil
+}
+
+// 生成 token 并向客户端发送 TokenRes packet
+func handleAuth(packChan chan<- *lib.Packet, pack *lib.Packet, account *Account, accId *uint64, accUN *string) error {
+	token, err := GenerateToken(account.Id)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
+	}
+
+	err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
+	if err != nil {
+		return err
+	}
+	*accId = account.Id
+	*accUN = account.Username
+	return nil
+}
+
+// 处理注册请求
+func signup(packChan chan<- *lib.Packet, storage *Storage, pack *lib.Packet, accId *uint64, accUN *string) error {
+	signup := &lib.Signup{}
+	if err := unmarshal(packChan, pack, signup); err != nil {
+		return err
+	}
+
+	passhashAndBcrypt, err := bcrypt.GenerateFromPassword(signup.Auth.Passhash, 14)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Gen.Val()})
+	}
+
+	account := &Account{
+		Username:          signup.Auth.Username,
+		PasshashAndBcrypt: base64.StdEncoding.EncodeToString(passhashAndBcrypt),
+	}
+	if err := storage.NewAccount(account); err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Exist.Val()})
+	}
+
+	return handleAuth(packChan, pack, account, accId, accUN)
+}
+
+// 处理登录请求
+func signin(packChan chan<- *lib.Packet, storage *Storage, pack *lib.Packet, accId *uint64, accUN *string) error {
+	signin := &lib.Signin{}
+	if err := unmarshal(packChan, pack, signin); err != nil {
+		return err
+	}
+
+	account, err := storage.GetAccountByUN(signin.Auth.Username)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
+	}
+
+	passhashAndBcrypt, err := base64.StdEncoding.DecodeString(account.PasshashAndBcrypt)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Base64_Decode.Val()})
+	}
+
+	if err := bcrypt.CompareHashAndPassword(passhashAndBcrypt, signin.Auth.Passhash); err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Compare.Val()})
+	}
+
+	return handleAuth(packChan, pack, account, accId, accUN)
+}
+
+// 处理 token 验证请求
+func validateToken(packChan chan<- *lib.Packet, storage *Storage, pack *lib.Packet, accId *uint64, accUN *string) error {
+	tokenReq := &lib.Token{}
+	if err := unmarshal(packChan, pack, tokenReq); err != nil {
+		return err
+	}
+
+	id, expired, err := ParseToken(tokenReq.Token)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Parse_Token.Val()})
+	}
+
+	if expired {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Token_Expired.Val()})
+	}
+
+	account, err := storage.GetAccountById(id)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
+	}
+
+	return handleAuth(packChan, pack, account, accId, accUN)
+}
+
+// 处理获取用户列表请求
+func users(packChan chan<- *lib.Packet, storage *Storage, pack *lib.Packet, accUN *string) error {
+	if len(*accUN) == 0 {
+		return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Forbidden.Val()})
+	}
+
+	users, err := storage.GetUsers(*accUN)
+	if err != nil {
+		return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Get_Users.Val()})
+	}
+
+	return handlePacket(packChan, pack, &lib.UsersRes{Users: users})
+}
+
+// 处理发送消息请求
+func recvMsg(packChan chan<- *lib.Packet, storage *Storage, pack *lib.Packet, accUN *string, node *snowflake.Node) error {
+	if len(*accUN) == 0 {
+		return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Forbidden.Val()})
+	}
+
+	msg := &lib.Msg{}
+	if err := lib.Unmarshal(pack.Data, msg); err != nil {
+		return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Unmarshal.Val()})
+	}
+
+	return storage.NewMsg(&Message{
+		// 生成消息 ID
+		Id:   int64(node.Generate()),
+		Kind: uint32(lib.MsgKind_TEXT),
+		From: msg.From,
+		To:   msg.To,
+		Data: msg.Data,
+	})
+}
+
 // 读取并处理客户端发送的 packet
 func recvFrom(conn net.Conn, packChan chan<- *lib.Packet, storage *Storage, accId *uint64, accUN *string, node *snowflake.Node) {
 	lib.RecvFrom(
 		conn,
-		func(pack *lib.Packet) error {
+		func(pack *lib.Packet) (err error) {
 			switch pack.Kind {
 			case lib.PackKind_SIGNUP:
-				signup := &lib.Signup{}
-				if err := lib.Unmarshal(pack.Data, signup); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
-				}
-
-				passhashAndBcrypt, err := bcrypt.GenerateFromPassword(signup.Auth.Passhash, 14)
-				if err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Gen.Val()})
-				}
-
-				account := &Account{
-					Username:          signup.Auth.Username,
-					PasshashAndBcrypt: base64.StdEncoding.EncodeToString(passhashAndBcrypt),
-				}
-				if err := storage.NewAccount(account); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Exist.Val()})
-				}
-
-				token, err := GenerateToken(account.Id)
-				if err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
-				}
-
-				err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
-				if err != nil {
-					return err
-				}
-				*accId = account.Id
-				*accUN = account.Username
-			case lib.PackKind_TOKEN:
-				token := &lib.Token{}
-				if err := lib.Unmarshal(pack.Data, token); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
-				}
-				if id, expired, err := ParseToken(token.Token); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Parse_Token.Val()})
-				} else if expired {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Token_Expired.Val()})
-				} else if account, err := storage.GetAccountById(id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
-				} else if token, err := GenerateToken(account.Id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
-				} else {
-					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
-					if err != nil {
-						return err
-					}
-					*accId = account.Id
-					*accUN = account.Username
-				}
+				err = signup(packChan, storage, pack, accId, accUN)
 			case lib.PackKind_SIGNIN:
-				signin := &lib.Signin{}
-				if err := lib.Unmarshal(pack.Data, signin); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Unmarshal.Val()})
-				}
-
-				if account, err := storage.GetAccountByUN(signin.Auth.Username); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Acc_Not_Exist.Val()})
-				} else if passhashAndBcrypt, err := base64.StdEncoding.DecodeString(account.PasshashAndBcrypt); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Base64_Decode.Val()})
-				} else if err := bcrypt.CompareHashAndPassword(passhashAndBcrypt, signin.Auth.Passhash); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Bcrypt_Compare.Val()})
-				} else if token, err := GenerateToken(account.Id); err != nil {
-					return handlePacket(packChan, pack, &lib.TokenRes{Code: lib.Err_Gen_Token.Val()})
-				} else {
-					err = handlePacket(packChan, pack, &lib.TokenRes{Id: account.Id, Username: account.Username, Token: token})
-					if err != nil {
-						return err
-					}
-					*accId = account.Id
-					*accUN = account.Username
-				}
+				err = signin(packChan, storage, pack, accId, accUN)
+			case lib.PackKind_TOKEN:
+				err = validateToken(packChan, storage, pack, accId, accUN)
 			case lib.PackKind_USERS:
-				if *accId == 0 || len(*accUN) == 0 {
-					return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Forbidden.Val()})
-				}
-
-				if users, err := storage.GetUsers(*accUN); err != nil {
-					return handlePacket(packChan, pack, &lib.UsersRes{Code: lib.Err_Get_Users.Val()})
-				} else {
-					return handlePacket(packChan, pack, &lib.UsersRes{Users: users})
-				}
+				err = users(packChan, storage, pack, accUN)
 			case lib.PackKind_MSG:
-				if *accId == 0 || len(*accUN) == 0 {
-					return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Forbidden.Val()})
-				}
-
-				msg := &lib.Msg{}
-				if err := lib.Unmarshal(pack.Data, msg); err != nil {
-					return sendPacket(packChan, &lib.ErrRes{Code: lib.Err_Unmarshal.Val()})
-				}
-
-				return storage.NewMsg(&Message{
-					// 生成消息 ID
-					Id:   int64(node.Generate()),
-					Kind: uint32(lib.MsgKind_TEXT),
-					From: msg.From,
-					To:   msg.To,
-					Data: msg.Data,
-				})
+				err = recvMsg(packChan, storage, pack, accUN, node)
 			}
-			return nil
+			return
 		})
 }
 
