@@ -76,6 +76,7 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 			case lib.PackKind_MSG:
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
+					// 如果 msgChan 通道的另一侧没有准备好接收数据，把消息写入 msgChan 会导致当前协程阻塞。开启一个独立协程并写入消息到 msgChan
 					go func() {
 						msgChan <- msg
 					}()
