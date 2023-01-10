@@ -10,9 +10,9 @@ enum PackKind {
   // Server
   PONG   = 0;
   ERR    = 1;
-  MSG    = 2;
-  RES    = 3;
-
+  RES    = 2;
+  // All
+  MSG    = 3;
   // Client
   PING   = 4;
   SIGNUP = 5;

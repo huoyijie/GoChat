@@ -99,7 +99,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 
-			req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_MSG, Data: bytes}, false)
+			req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_MSG, Data: bytes})
 			m.reqChan <- req
 
 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", m.from))+m.textarea.Value())

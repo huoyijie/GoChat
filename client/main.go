@@ -18,9 +18,10 @@ type request_t struct {
 	deadline time.Time
 }
 
-func (request *request_t) init(pack *lib.Packet, sync bool) *request_t {
+func (request *request_t) init(pack *lib.Packet) *request_t {
 	request.pack = pack
-	if sync {
+	switch {
+	case pack.Kind > lib.PackKind_PING:
 		request.c = make(chan *response_t, 1)
 	}
 	return request
@@ -135,7 +136,7 @@ func main() {
 	} else if bytes, err := lib.Marshal(&lib.Token{Token: token}); err != nil {
 		m = home{choice: CHOICE_SIGNIN, base: b}
 	} else {
-		req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes}, true)
+		req := new(request_t).init(&lib.Packet{Kind: lib.PackKind_TOKEN, Data: bytes})
 		reqChan <- req
 		res := <-req.c
 		if !res.ok() {
