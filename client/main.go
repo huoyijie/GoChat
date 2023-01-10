@@ -121,6 +121,15 @@ func dbName() string {
 	return dbName
 }
 
+// 服务器地址环境变量
+func svrAddr() string {
+	svrAddr, found := os.LookupEnv("SVR_ADDR")
+	if !found {
+		svrAddr = "127.0.0.1:8888"
+	}
+	return svrAddr
+}
+
 func main() {
 	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
 	go lib.SignalHandler()
@@ -129,8 +138,8 @@ func main() {
 	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, dbName()))
 	lib.FatalNotNil(err)
 
-	// 客户端进行 tcp 拨号，请求连接 127.0.0.1:8888
-	conn, err := net.Dial("tcp", "127.0.0.1:8888")
+	// 客户端进行 tcp 拨号，请求连接服务器
+	conn, err := net.Dial("tcp", svrAddr())
 	// 连接遇到错误则退出进程
 	lib.FatalNotNil(err)
 
