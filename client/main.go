@@ -12,33 +12,6 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
-type request_t struct {
-	pack     *lib.Packet
-	c        chan *response_t
-	deadline time.Time
-}
-
-func (request *request_t) init(pack *lib.Packet) *request_t {
-	request.pack = pack
-	switch {
-	case pack.Kind > lib.PackKind_PING:
-		request.c = make(chan *response_t, 1)
-	}
-	return request
-}
-
-func (request *request_t) sync() bool {
-	return request.c != nil
-}
-
-type response_t struct {
-	pack *lib.Packet
-}
-
-func (response *response_t) ok() bool {
-	return response.pack != nil
-}
-
 func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t) {
 	var id uint64
 	requests := make(map[uint64]*request_t)
@@ -79,33 +52,8 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 	}
 }
 
-func dbName() string {
-	dbName, found := os.LookupEnv("DB_NAME")
-	if !found {
-		dbName = "client.db"
-	}
-	return dbName
-}
-
-func main() {
-	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
-	go lib.SignalHandler()
-
-	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, dbName()))
-	lib.FatalNotNil(err)
-
-	// 客户端进行 tcp 拨号，请求连接 127.0.0.1:8888
-	conn, err := net.Dial("tcp", "127.0.0.1:8888")
-	// 连接遇到错误则退出进程
-	lib.FatalNotNil(err)
-
-	msgChan := make(chan *lib.Msg)
-	reqChan := make(chan *request_t)
-	resChan := make(chan *response_t)
-	go sendTo(conn, reqChan, resChan)
-
-	// 连接成功后启动协程输出服务器的转发消息
-	go lib.RecvFrom(
+func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t) {
+	lib.RecvFrom(
 		conn,
 		func(pack *lib.Packet) error {
 			switch pack.Kind {
@@ -126,7 +74,9 @@ func main() {
 			}
 			return nil
 		})
+}
 
+func renderUI(reqChan chan<- *request_t, msgChan <-chan *lib.Msg, storage *Storage) {
 	b := base{reqChan: reqChan, msgChan: msgChan, storage: storage}
 	var m tea.Model
 	if kv, err := storage.GetValue("token"); err != nil {
@@ -158,6 +108,42 @@ func main() {
 
 	p := tea.NewProgram(m)
 
-	_, err = p.Run()
+	_, err := p.Run()
 	lib.FatalNotNil(err)
+}
+
+// 存储文件名字环境变量
+func dbName() string {
+	dbName, found := os.LookupEnv("DB_NAME")
+	if !found {
+		dbName = "client.db"
+	}
+	return dbName
+}
+
+func main() {
+	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
+	go lib.SignalHandler()
+
+	// 初始化存储
+	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, dbName()))
+	lib.FatalNotNil(err)
+
+	// 客户端进行 tcp 拨号，请求连接 127.0.0.1:8888
+	conn, err := net.Dial("tcp", "127.0.0.1:8888")
+	// 连接遇到错误则退出进程
+	lib.FatalNotNil(err)
+
+	reqChan := make(chan *request_t)
+	resChan := make(chan *response_t)
+	msgChan := make(chan *lib.Msg)
+
+	// 启动单独的协程，发送请求并接收响应
+	go sendTo(conn, reqChan, resChan)
+
+	// 启动单独的协程，接收处理或转发来自服务器的 packet
+	go recvFrom(conn, msgChan, resChan)
+
+	// 渲染 UI
+	renderUI(reqChan, msgChan, storage)
 }
