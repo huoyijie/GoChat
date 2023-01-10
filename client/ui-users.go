@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"io"
@@ -56,20 +55,10 @@ type users struct {
 }
 
 func initialUsers(base base) users {
-	req := newRequest(&lib.Packet{Kind: lib.PackKind_USERS})
-	base.reqChan <- req
-
-	res := <-req.c
-	if !res.ok() {
-		lib.FatalNotNil(errors.New("获取用户列表超时"))
-	}
-
 	usersRes := &lib.UsersRes{}
-	if err := lib.Unmarshal(res.pack.Data, usersRes); err != nil {
-		lib.FatalNotNil(errors.New("获取用户列表异常"))
-	}
-
-	if usersRes.Code < 0 {
+	if err := handlePacket(base.reqChan, &lib.Users{}, usersRes); err != nil {
+		lib.FatalNotNil(err)
+	} else if usersRes.Code < 0 {
 		lib.FatalNotNil(fmt.Errorf("获取用户列表异常: %d", usersRes.Code))
 	}
 
