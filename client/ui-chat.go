@@ -119,12 +119,16 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m chat) View() string {
+	help := subtle("enter send") + dot + subtle("esc quit")
+
 	s := fmt.Sprintf(
-		"%s\n\n%s\n\n%s",
+		"%s\n\n%s\n\n%s\n\n%s",
 		inputStyle.Width(32).Render("@"+m.to),
 		m.viewport.View(),
 		m.textarea.View(),
+		help,
 	) + "\n\n"
+
 	return indent.String("\n"+s, 4)
 }
 
