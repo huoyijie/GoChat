@@ -60,7 +60,7 @@ func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m home) View() string {
 	tpl := "%s\n\n"
-	tpl += subtle("k/j, up/down: 选择") + dot + subtle("enter: 确认") + dot + subtle("q, esc: 退出")
+	tpl += subtle("↑/k up") + dot + subtle("↓/j down") + dot + subtle("enter select") + dot + subtle("q/esc quit")
 
 	choices := fmt.Sprintf(
 		"%s\n%s",
