@@ -86,8 +86,10 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
-			fmt.Println(m.textarea.Value())
 			return m, tea.Quit
+		case tea.KeyCtrlR:
+			users := initialUsers(m.base)
+			return users, users.Init()
 		case tea.KeyEnter:
 			if len(strings.TrimSpace(m.textarea.Value())) == 0 {
 				return m, nil
@@ -119,7 +121,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m chat) View() string {
-	help := subtle("enter send") + dot + subtle("esc quit")
+	help := subtle("enter send") + dot + subtle("ctrl+r back") + dot + subtle("esc quit")
 
 	s := fmt.Sprintf(
 		"%s\n\n%s\n\n%s\n\n%s",
