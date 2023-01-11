@@ -29,10 +29,10 @@ func (m home) Init() tea.Cmd {
 	return nil
 }
 
-func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
+func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keypress := msg.String(); keypress {
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		case "j", "down":
@@ -58,12 +58,7 @@ func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return updateChoices(msg, m)
-}
-
-func choicesView(m home) string {
-
+func (m home) View() string {
 	tpl := "%s\n\n"
 	tpl += subtle("k/j, up/down: 选择") + dot + subtle("enter: 确认") + dot + subtle("q, esc: 退出")
 
@@ -73,11 +68,7 @@ func choicesView(m home) string {
 		checkbox(choices[CHOICE_SIGNIN], m.choice == CHOICE_SIGNIN),
 	)
 
-	return fmt.Sprintf(tpl, choices)
-}
-
-func (m home) View() string {
-	s := choicesView(m)
+	s := fmt.Sprintf(tpl, choices)
 	return indent.String("\n"+s+"\n\n", 4)
 }
 
