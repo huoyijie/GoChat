@@ -56,7 +56,7 @@ type users struct {
 
 func initialUsers(base base) users {
 	usersRes := &lib.UsersRes{}
-	if err := handlePacket(base.reqChan, &lib.Users{}, usersRes); err != nil {
+	if err := base.poster.handle(&lib.Users{}, usersRes); err != nil {
 		lib.FatalNotNil(err)
 	} else if usersRes.Code < 0 {
 		lib.FatalNotNil(fmt.Errorf("获取用户列表异常: %d", usersRes.Code))

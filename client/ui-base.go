@@ -3,8 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/huoyijie/GoChat/lib"
 	"regexp"
+
+	"github.com/huoyijie/GoChat/lib"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -77,15 +78,15 @@ type base struct {
 	// 通过 msgChan 接收新的未读消息
 	msgChan <-chan *lib.Msg
 	// 通过 reqChan 向服务器发送请求
-	reqChan chan<- *request_t
+	poster post
 	// 通过 storage 读写本地存储
 	storage *Storage
 }
 
-func initialBase(msgChan <-chan *lib.Msg, reqChan chan<- *request_t, storage *Storage) base {
+func initialBase(msgChan <-chan *lib.Msg, poster post, storage *Storage) base {
 	return base{
-		msgChan: msgChan,
-		reqChan: reqChan,
-		storage: storage,
+		msgChan,
+		poster,
+		storage,
 	}
 }

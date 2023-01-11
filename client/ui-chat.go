@@ -93,7 +93,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			if err := sendPacket(m.reqChan, &lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}); err != nil {
+			if err := m.poster.send(&lib.Msg{Kind: lib.MsgKind_TEXT, From: m.from, To: m.to, Data: []byte(m.textarea.Value())}); err != nil {
 				return m, tea.Quit
 			}
 

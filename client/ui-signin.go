@@ -104,7 +104,7 @@ func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
 
 				tokenRes := &lib.TokenRes{}
-				if err := handlePacket(m.reqChan, &lib.Signin{Auth: &lib.Auth{
+				if err := m.poster.handle(&lib.Signin{Auth: &lib.Auth{
 					Username: m.inputs[0].Value(),
 					Passhash: passhash[:],
 				}}, tokenRes); err != nil {

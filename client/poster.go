@@ -24,8 +24,23 @@ func syncRequestToKind(m proto.Message) (kind lib.PackKind, err error) {
 	return
 }
 
+// 定义处理 packet 接口
+type post interface {
+	handle(req proto.Message, res proto.Message) error
+	send(req proto.Message) error
+}
+
+// 实现 post 接口
+type poster struct {
+	reqChan chan<- *request_t
+}
+
+func newPoster(reqChan chan<- *request_t) *poster {
+	return &poster{reqChan}
+}
+
 // 处理同步请求
-func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Message) (err error) {
+func (p *poster) handle(req proto.Message, res proto.Message) (err error) {
 	kind, err := syncRequestToKind(req)
 	if err != nil { // 转换同步请求类型
 		return
@@ -37,7 +52,7 @@ func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Messag
 	}
 
 	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
-	reqChan <- request
+	p.reqChan <- request
 	response := <-request.c
 	if !response.ok() { // 同步请求超时
 		err = errors.New("请求超时")
@@ -49,7 +64,7 @@ func handlePacket(reqChan chan<- *request_t, req proto.Message, res proto.Messag
 }
 
 // 发送非同步请求
-func sendPacket(reqChan chan<- *request_t, req proto.Message) (err error) {
+func (p *poster) send(req proto.Message) (err error) {
 	var kind lib.PackKind
 	switch req.(type) {
 	case *lib.Msg:
@@ -64,6 +79,8 @@ func sendPacket(reqChan chan<- *request_t, req proto.Message) (err error) {
 	}
 
 	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
-	reqChan <- request
+	p.reqChan <- request
 	return
 }
+
+var _ post = (*poster)(nil)
