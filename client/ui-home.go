@@ -25,38 +25,11 @@ func (m home) Init() tea.Cmd {
 	return nil
 }
 
-func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return updateChoices(msg, m)
-}
-
-func (m home) View() string {
-	s := choicesView(m)
-	return indent.String("\n"+s+"\n\n", 4)
-}
-
-var _ tea.Model = (*home)(nil)
-
-// The first view, where you're choosing a task
-func choicesView(m home) string {
-
-	tpl := "%s\n\n"
-	tpl += subtle("j/k, up/down: 选择") + dot + subtle("enter: 确认") + dot + subtle("q, esc: 退出")
-
-	choices := fmt.Sprintf(
-		"%s\n%s",
-		checkbox(choices[CHOICE_SIGNUP], m.choice == CHOICE_SIGNUP),
-		checkbox(choices[CHOICE_SIGNIN], m.choice == CHOICE_SIGNIN),
-	)
-
-	return fmt.Sprintf(tpl, choices)
-}
-
-// Update loop for the first view where you're choosing a task.
 func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc", "ctrl+c":
+		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		case "j", "down":
 			m.choice++
@@ -80,3 +53,28 @@ func updateChoices(msg tea.Msg, m home) (tea.Model, tea.Cmd) {
 	}
 	return m, nil
 }
+
+func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return updateChoices(msg, m)
+}
+
+func choicesView(m home) string {
+
+	tpl := "%s\n\n"
+	tpl += subtle("k/j, up/down: 选择") + dot + subtle("enter: 确认") + dot + subtle("q, esc: 退出")
+
+	choices := fmt.Sprintf(
+		"%s\n%s",
+		checkbox(choices[CHOICE_SIGNUP], m.choice == CHOICE_SIGNUP),
+		checkbox(choices[CHOICE_SIGNIN], m.choice == CHOICE_SIGNIN),
+	)
+
+	return fmt.Sprintf(tpl, choices)
+}
+
+func (m home) View() string {
+	s := choicesView(m)
+	return indent.String("\n"+s+"\n\n", 4)
+}
+
+var _ tea.Model = (*home)(nil)
