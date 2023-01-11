@@ -11,8 +11,8 @@ import (
 )
 
 func signin_submit(m *form) (tea.Model, tea.Cmd) {
-	if len(m.inputs[0].Value()) < 4 {
-		m.errs[0] = "用户名至少包含4个字母或数字"
+	if len(m.inputs[0].Value()) < 3 {
+		m.errs[0] = "用户名至少包含3个字母或数字"
 		return m, nil
 	}
 
