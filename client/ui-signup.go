@@ -10,25 +10,10 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
-func signup_submit(m *form) (tea.Model, tea.Cmd) {
-	if len(m.inputs[0].Value()) < 3 {
-		m.errs[0] = "用户名至少包含3个字母或数字"
-		return m, nil
-	}
-
-	if len(m.inputs[1].Value()) < 8 {
-		m.errs[1] = "密码至少包含8个字母或数字"
-		return m, nil
-	}
-
-	if len(m.inputs[2].Value()) < 8 {
-		m.errs[2] = "密码至少包含8个字母或数字"
-		return m, nil
-	}
-
+func signupSubmit(m *form) (tea.Model, tea.Cmd) {
 	if m.inputs[1].Value() != m.inputs[2].Value() {
 		m.errs[1] = "两次密码输入不一致"
-		m.errs[2] = "两次密码输入不一致"
+		m.errs[2] = m.errs[1]
 		return m, nil
 	}
 
@@ -63,7 +48,18 @@ type signup struct {
 }
 
 func initialSignup(base base) signup {
-	m := initialForm(base, 3, []string{"用户名", "密码", "确认密码"}, "注册", signup_submit)
+	m := initialForm(
+		base,
+		3,
+		[]string{"用户名", "密码", "确认密码"},
+		"注册",
+		[]check_fn{
+			usernameLenCheck,
+			passwordLenCheck,
+			passwordLenCheck,
+		},
+		signupSubmit,
+	)
 
 	var t textinput.Model
 	for i := range m.inputs {

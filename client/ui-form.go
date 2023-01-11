@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -9,8 +11,60 @@ import (
 	"github.com/muesli/reflow/indent"
 )
 
+// 用户名实时输入验证，只允许输入小写字母和数字，长度在[1,32]之间
+func usernameValidator(s string) (err error) {
+	usernameRegexp := "^[a-z\\d]{1,32}$"
+	re, err := regexp.Compile(usernameRegexp)
+	if err != nil {
+		return
+	}
+
+	if !re.MatchString(s) {
+		err = errors.New("username is invalid")
+	}
+	return
+}
+
+// 密码实时输入验证器，只允许输入小写字母和数字，长度在[1,16]之间
+func passwordValidator(s string) (err error) {
+	passwordRegexp := "^[a-z\\d]{1,16}$"
+	re, err := regexp.Compile(passwordRegexp)
+	if err != nil {
+		return
+	}
+
+	if !re.MatchString(s) {
+		err = errors.New("password is invalid")
+	}
+	return
+}
+
+type check_fn = func(string) (bool, string)
+
+// 表单提交后检查用户名长度
+func usernameLenCheck(s string) (ok bool, hint string) {
+	if len(s) < 3 {
+		hint = "用户名至少包含3个字母或数字"
+		return
+	}
+	ok = true
+	return
+}
+
+// 表单提交后检查密码长度
+func passwordLenCheck(s string) (ok bool, hint string) {
+	if len(s) < 8 {
+		hint = "密码至少包含8个字母或数字"
+		return
+	}
+	ok = true
+	return
+}
+
+// 表单提交处理函数
 type submit_fn = func(*form) (tea.Model, tea.Cmd)
 
+// 登录和注册表单基类
 type form struct {
 	base
 	focusIndex int
@@ -20,18 +74,20 @@ type form struct {
 	cursorMode textinput.CursorMode
 	labels     []string
 	button     string
+	lenChecks  []check_fn
 	submit     submit_fn
 }
 
-func initialForm(base base, inputs int, labels []string, button string, submit submit_fn) form {
+func initialForm(base base, inputs int, labels []string, button string, lenChecks []check_fn, submit submit_fn) form {
 	return form{
-		base:   base,
-		inputs: make([]textinput.Model, inputs),
-		errs:   make([]string, inputs),
-		hint:   "",
-		labels: labels,
-		button: button,
-		submit: submit,
+		base:      base,
+		inputs:    make([]textinput.Model, inputs),
+		errs:      make([]string, inputs),
+		hint:      "",
+		labels:    labels,
+		button:    button,
+		lenChecks: lenChecks,
+		submit:    submit,
 	}
 }
 
@@ -76,6 +132,12 @@ func (m form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
 			if keyType == tea.KeyEnter && m.focusIndex == len(m.inputs) {
+				for i := range m.lenChecks {
+					if ok, hint := m.lenChecks[i](m.inputs[i].Value()); !ok {
+						m.errs[i] = hint
+						return m, nil
+					}
+				}
 				return m.submit(&m)
 			}
 
@@ -138,9 +200,9 @@ func (m form) View() string {
 		}
 	}
 
-	button := focusedStyle.Copy().Render(fmt.Sprintf("[ %s ]", m.button))
+	button := fmt.Sprintf("[ %s ]", blurredStyle.Render(m.button))
 	if m.focusIndex == len(m.inputs) {
-		button = fmt.Sprintf("[ %s ]", blurredStyle.Render(m.button))
+		button = focusedStyle.Copy().Render(fmt.Sprintf("[ %s ]", m.button))
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", button)
 

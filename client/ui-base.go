@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/huoyijie/GoChat/lib"
 
@@ -45,32 +43,6 @@ func colorFg(val, color string) string {
 // Return a function that will colorize the foreground of a given string.
 func makeFgStyle(color string) func(string) string {
 	return termenv.Style{}.Foreground(term.Color(color)).Styled
-}
-
-func usernameValidator(s string) (err error) {
-	usernameRegexp := "^[a-z\\d]{1,32}$"
-	re, err := regexp.Compile(usernameRegexp)
-	if err != nil {
-		return
-	}
-
-	if !re.MatchString(s) {
-		err = errors.New("username is invalid")
-	}
-	return
-}
-
-func passwordValidator(s string) (err error) {
-	passwordRegexp := "^[a-z\\d]{1,16}$"
-	re, err := regexp.Compile(passwordRegexp)
-	if err != nil {
-		return
-	}
-
-	if !re.MatchString(s) {
-		err = errors.New("password is invalid")
-	}
-	return
 }
 
 // 每个 ui 对象可嵌入 base 对象

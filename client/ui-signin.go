@@ -10,17 +10,7 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
-func signin_submit(m *form) (tea.Model, tea.Cmd) {
-	if len(m.inputs[0].Value()) < 3 {
-		m.errs[0] = "用户名至少包含3个字母或数字"
-		return m, nil
-	}
-
-	if len(m.inputs[1].Value()) < 8 {
-		m.errs[1] = "密码至少包含8个字母或数字"
-		return m, nil
-	}
-
+func signinSubmit(m *form) (tea.Model, tea.Cmd) {
 	passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
 
 	tokenRes := &lib.TokenRes{}
@@ -52,7 +42,14 @@ type signin struct {
 }
 
 func initialSignin(base base) signin {
-	m := initialForm(base, 2, []string{"用户名", "密码"}, "登录", signin_submit)
+	m := initialForm(
+		base,
+		2,
+		[]string{"用户名", "密码"},
+		"登录",
+		[]check_fn{usernameLenCheck, passwordLenCheck},
+		signinSubmit,
+	)
 
 	var t textinput.Model
 	for i := range m.inputs {
