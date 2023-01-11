@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// 转换同步响应类型
 func syncResponseToKind(m proto.Message) (kind lib.PackKind, err error) {
 	switch m.(type) {
 	case *lib.TokenRes, *lib.UsersRes:
@@ -17,7 +18,21 @@ func syncResponseToKind(m proto.Message) (kind lib.PackKind, err error) {
 	return
 }
 
-func handlePacket(packChan chan<- *lib.Packet, pack *lib.Packet, res proto.Message) (err error) {
+// 实现 post 接口
+type poster struct {
+	packChan chan<- *lib.Packet
+}
+
+func newPoster(packChan chan<- *lib.Packet) *poster {
+	return &poster{packChan}
+}
+
+func (p *poster) Handle(req, res proto.Message) (err error) {
+	pack, ok := req.(*lib.Packet)
+	if !ok {
+		return errors.New("invalid request")
+	}
+
 	kind, err := syncResponseToKind(res)
 	if err != nil {
 		return
@@ -28,7 +43,7 @@ func handlePacket(packChan chan<- *lib.Packet, pack *lib.Packet, res proto.Messa
 		return
 	}
 
-	packChan <- &lib.Packet{
+	p.packChan <- &lib.Packet{
 		Id:   pack.Id,
 		Kind: kind,
 		Data: bytes,
@@ -36,7 +51,7 @@ func handlePacket(packChan chan<- *lib.Packet, pack *lib.Packet, res proto.Messa
 	return
 }
 
-func sendPacket(packChan chan<- *lib.Packet, res proto.Message) (err error) {
+func (p *poster) Send(res proto.Message) (err error) {
 	var kind lib.PackKind
 	switch res.(type) {
 	case *lib.Msg:
@@ -52,9 +67,11 @@ func sendPacket(packChan chan<- *lib.Packet, res proto.Message) (err error) {
 		return
 	}
 
-	packChan <- &lib.Packet{
+	p.packChan <- &lib.Packet{
 		Kind: kind,
 		Data: bytes,
 	}
 	return
 }
+
+var _ lib.Post = (*poster)(nil)

@@ -78,12 +78,12 @@ type base struct {
 	// 通过 msgChan 接收新的未读消息
 	msgChan <-chan *lib.Msg
 	// 通过 reqChan 向服务器发送请求
-	poster post
+	poster lib.Post
 	// 通过 storage 读写本地存储
 	storage *Storage
 }
 
-func initialBase(msgChan <-chan *lib.Msg, poster post, storage *Storage) base {
+func initialBase(msgChan <-chan *lib.Msg, poster lib.Post, storage *Storage) base {
 	return base{
 		msgChan,
 		poster,

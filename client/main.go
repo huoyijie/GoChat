@@ -97,7 +97,7 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 }
 
 // home 页面是选择注册或者登录页面。如果本地存储中 token 验证合法后可自动登录并刷新本地 token，然后进入用户列表页面。如果本地没有 token，或者验证 token 失败，则进入 home 页面。
-func renderHome(poster post, storage *Storage) (renderHome bool) {
+func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
 	kv, err := storage.GetValue("token")
 	if err != nil { // 未登录过
 		return true
@@ -109,7 +109,7 @@ func renderHome(poster post, storage *Storage) (renderHome bool) {
 	}
 
 	tokenRes := &lib.TokenRes{}
-	if err = poster.handle(&lib.Token{Token: token}, tokenRes); err != nil || tokenRes.Code < 0 { // 验证 token 请求错误，或者 token 未验证成功
+	if err = poster.Handle(&lib.Token{Token: token}, tokenRes); err != nil || tokenRes.Code < 0 { // 验证 token 请求错误，或者 token 未验证成功
 		return true
 	}
 
@@ -125,7 +125,7 @@ func renderHome(poster post, storage *Storage) (renderHome bool) {
 }
 
 // 渲染 UI
-func renderUI(poster post, msgChan <-chan *lib.Msg, storage *Storage) {
+func renderUI(poster lib.Post, msgChan <-chan *lib.Msg, storage *Storage) {
 	b := initialBase(msgChan, poster, storage)
 
 	var m tea.Model
