@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"path/filepath"
 	"time"
@@ -42,18 +43,22 @@ func recvFrom(conn net.Conn, b base, accId *uint64, accUN *string, node *snowfla
 	lib.RecvFrom(
 		conn,
 		func(pack *lib.Packet) (err error) {
+			var biz biz
 			switch pack.Kind {
 			case lib.PackKind_SIGNUP:
-				err = signup.do(pack, accId, accUN)
+				biz = signup
 			case lib.PackKind_SIGNIN:
-				err = signin.do(pack, accId, accUN)
+				biz = signin
 			case lib.PackKind_TOKEN:
-				err = val_token.do(pack, accId, accUN)
+				biz = val_token
 			case lib.PackKind_USERS:
-				err = users.do(pack, accId, accUN)
+				biz = users
 			case lib.PackKind_MSG:
-				err = recv_msg.do(pack, accId, accUN)
+				biz = recv_msg
+			default:
+				return errors.New("invalid kind of packet")
 			}
+			err = biz.do(pack, accId, accUN)
 			return
 		})
 }
