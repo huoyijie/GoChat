@@ -81,3 +81,11 @@ type base struct {
 	// 通过 storage 读写本地存储
 	storage *Storage
 }
+
+func initialBase(msgChan <-chan *lib.Msg, reqChan chan<- *request_t, storage *Storage) base {
+	return base{
+		msgChan: msgChan,
+		reqChan: reqChan,
+		storage: storage,
+	}
+}

@@ -126,11 +126,11 @@ func renderHome(reqChan chan<- *request_t, storage *Storage) (renderHome bool) {
 
 // 渲染 UI
 func renderUI(reqChan chan<- *request_t, msgChan <-chan *lib.Msg, storage *Storage) {
-	b := base{reqChan: reqChan, msgChan: msgChan, storage: storage}
+	b := initialBase(msgChan, reqChan, storage)
 
 	var m tea.Model
 	if renderHome(reqChan, storage) {
-		m = home{choice: CHOICE_SIGNIN, base: b}
+		m = initialHome(b)
 	} else {
 		m = initialUsers(b)
 	}
