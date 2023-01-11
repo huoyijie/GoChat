@@ -69,11 +69,11 @@ func (m signin) Init() tea.Cmd {
 func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "esc", "ctrl+c":
+		switch keyType := msg.Type; keyType {
+		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		// Change cursor mode
-		case "ctrl+r":
+		case tea.KeyCtrlR:
 			m.cursorMode++
 			if m.cursorMode > textinput.CursorHide {
 				m.cursorMode = textinput.CursorBlink
@@ -85,12 +85,10 @@ func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 
 		// Set focus to next input
-		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
-
+		case tea.KeyTab, tea.KeyShiftTab, tea.KeyEnter, tea.KeyUp, tea.KeyDown:
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
-			if s == "enter" && m.focusIndex == len(m.inputs) {
+			if keyType == tea.KeyEnter && m.focusIndex == len(m.inputs) {
 				if len(m.inputs[0].Value()) < 4 {
 					m.errs[0] = "用户名至少包含4个字母或数字"
 					return m, nil
@@ -128,7 +126,7 @@ func (m signin) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			// Cycle indexes
-			if s == "up" || s == "shift+tab" {
+			if keyType == tea.KeyUp || keyType == tea.KeyShiftTab {
 				m.focusIndex--
 			} else {
 				m.focusIndex++
