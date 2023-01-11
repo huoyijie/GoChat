@@ -21,6 +21,10 @@ type home struct {
 	choice int
 }
 
+func initialHome(base base) home {
+	return home{choice: CHOICE_SIGNIN, base: base}
+}
+
 func (m home) Init() tea.Cmd {
 	return nil
 }
