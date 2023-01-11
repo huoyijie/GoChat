@@ -74,7 +74,7 @@ func (m signup) Init() tea.Cmd {
 func (m signup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keypress := msg.String(); keypress {
 		case "esc", "ctrl+c":
 			return m, tea.Quit
 		// Change cursor mode
@@ -225,6 +225,11 @@ func (m signup) View() string {
 	b.WriteString(helpStyle.Render("鼠标模式: "))
 	b.WriteString(cursorModeHelpStyle.Render(m.cursorMode.String()))
 	b.WriteString(helpStyle.Render(" (ctrl+r 改变模式)"))
+	b.WriteRune('\n')
+
+	help := subtle("↑/shift+tab up") + dot + subtle("↓/tab down") + dot + subtle("enter select") + dot + subtle("esc quit")
+
+	b.WriteString(help)
 
 	return indent.String("\n"+b.String()+"\n\n", 4)
 }
