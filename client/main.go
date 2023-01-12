@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -172,25 +173,27 @@ func svrAddr() string {
 	return svrAddr
 }
 
-func main() {
-	// 启动单独协程，监听 ctrl+c 或 kill 信号，收到信号结束进程
-	go lib.SignalHandler()
+// 连接服务器，最多重试20次
+func connect() (net.Conn, error) {
+	for i := 0; i < 20; i++ {
+		// 客户端进行 tcp 拨号，请求连接服务器
+		if conn, err := net.Dial("tcp", svrAddr()); err != nil {
+			// 遇到连接错误后，1s后自动重新连接
+			time.Sleep(time.Second)
+		} else {
+			return conn, nil
+		}
+	}
+	return nil, errors.New("connect error")
+}
 
+func main() {
 	// 初始化存储
 	storage, err := new(Storage).Init(dbPath())
 	lib.FatalNotNil(err)
 
-	var conn net.Conn
-loop:
-	for {
-		// 客户端进行 tcp 拨号，请求连接服务器
-		if conn, err = net.Dial("tcp", svrAddr()); err != nil {
-			// 遇到连接错误后，1s后自动重新连接
-			time.Sleep(time.Second)
-		} else {
-			break loop
-		}
-	}
+	conn, err := connect()
+	lib.FatalNotNil(err)
 
 	reqChan := make(chan *request_t)
 	resChan := make(chan *response_t)
