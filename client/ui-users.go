@@ -96,7 +96,7 @@ func initialUsers(base base) users {
 }
 
 func (m users) Init() tea.Cmd {
-	return nil
+	return tick()
 }
 
 func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -122,6 +122,30 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			chat := initialChat(i.username, m.base)
 			return chat, chat.Init()
 		}
+
+	case tickMsg:
+		unReadMsgCnt, err := m.storage.UnReadMsgCount()
+		if err != nil {
+			return m, nil
+		}
+
+		var cmds []tea.Cmd
+		for i := range m.list.Items() {
+			v := m.list.Items()[i].(item)
+			if count, ok := unReadMsgCnt[v.username]; ok {
+				cmd := m.list.SetItem(
+					i,
+					item{
+						username: v.username,
+						msgCount: count,
+					},
+				)
+				cmds = append(cmds, cmd)
+			}
+		}
+		cmds = append(cmds, tick())
+
+		return m, tea.Batch(cmds...)
 	}
 
 	var cmd tea.Cmd

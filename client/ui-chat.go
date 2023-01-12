@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -12,17 +11,6 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 	"github.com/muesli/reflow/indent"
 )
-
-type (
-	errMsg  error
-	tickMsg time.Time
-)
-
-func tick() tea.Cmd {
-	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
-}
 
 type chat struct {
 	base
