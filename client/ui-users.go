@@ -73,6 +73,7 @@ func initialUsers(base base) users {
 	l.Title = "用户列表"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
+	l.SetShowHelp(false)
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = usersHelpStyle
@@ -91,10 +92,15 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "q", "esc", "ctrl+c":
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
-		case "enter":
+		case tea.KeyCtrlX:
+			// 删除本地存储文件
+			dropDB()
+			home := initialHome(m.base)
+			return home, home.Init()
+		case tea.KeyEnter:
 			i, ok := m.list.SelectedItem().(item)
 			if !ok {
 				return m, tea.Quit
@@ -110,7 +116,14 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m users) View() string {
-	return indent.String("\n"+m.list.View(), 4)
+	help := subtle("↑/k up") + dot + subtle("↓/j down") + dot + subtle("q/esc quit") + dot + subtle("ctrl+x sign out") + dot + subtle("? more")
+
+	s := fmt.Sprintf(
+		"\n%s\n%s\n\n",
+		m.list.View(),
+		help,
+	)
+	return indent.String(s, 4)
 }
 
 var _ tea.Model = (*users)(nil)

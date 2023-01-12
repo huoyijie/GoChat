@@ -153,6 +153,14 @@ func dbName() string {
 	return dbName
 }
 
+func dbPath() string {
+	return filepath.Join(lib.WorkDir, dbName())
+}
+
+func dropDB() error {
+	return os.Remove(dbPath())
+}
+
 // 服务器地址环境变量
 func svrAddr() string {
 	svrAddr, found := os.LookupEnv("SVR_ADDR")
@@ -167,7 +175,7 @@ func main() {
 	go lib.SignalHandler()
 
 	// 初始化存储
-	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, dbName()))
+	storage, err := new(Storage).Init(dbPath())
 	lib.FatalNotNil(err)
 
 	// 客户端进行 tcp 拨号，请求连接服务器
