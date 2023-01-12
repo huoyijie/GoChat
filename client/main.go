@@ -153,10 +153,12 @@ func dbName() string {
 	return dbName
 }
 
+// 存储文件路径
 func dbPath() string {
 	return filepath.Join(lib.WorkDir, dbName())
 }
 
+// 删除本地存储文件
 func dropDB() error {
 	return os.Remove(dbPath())
 }
