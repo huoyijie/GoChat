@@ -98,3 +98,25 @@ func (s *Storage) GetMsgList(from string) (msgList []Message, err error) {
 	})
 	return
 }
+
+// 获取当前登录用户的未读消息数量
+func (s *Storage) UnReadMsgCount() (msgCount map[string]uint32, err error) {
+	rows, err := s.db.Model(&Message{}).Select("from", "COUNT(*) as count").Group("from").Rows()
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+	msgCount = make(map[string]uint32)
+	for rows.Next() {
+		var (
+			from  string
+			count uint32
+		)
+		if err = rows.Scan(&from, &count); err != nil {
+			continue
+		}
+		msgCount[from] = count
+	}
+	return
+}

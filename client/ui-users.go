@@ -22,7 +22,10 @@ var (
 	usersHelpStyle    = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
 
-type item string
+type item struct {
+	username string
+	msgCount uint32
+}
 
 func (i item) FilterValue() string { return "" }
 
@@ -37,7 +40,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		return
 	}
 
-	str := fmt.Sprintf("%d. %s", index+1, i)
+	var str string
+	if i.msgCount > 0 {
+		str = fmt.Sprintf("%d. %s (%d+)", index+1, i.username, i.msgCount)
+	} else {
+		str = fmt.Sprintf("%d. %s", index+1, i.username)
+	}
 
 	fn := itemStyle.Render
 	if index == m.Index() {
@@ -62,9 +70,15 @@ func initialUsers(base base) users {
 		lib.FatalNotNil(fmt.Errorf("获取用户列表异常: %d", usersRes.Code))
 	}
 
+	unReadMsgCnt, err := base.storage.UnReadMsgCount()
+	lib.FatalNotNil(err)
+
 	items := make([]list.Item, len(usersRes.Users))
 	for i := range usersRes.Users {
-		items[i] = item(usersRes.Users[i])
+		items[i] = item{
+			username: usersRes.Users[i],
+			msgCount: unReadMsgCnt[usersRes.Users[i]],
+		}
 	}
 
 	const defaultWidth = 20
@@ -105,7 +119,7 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !ok {
 				return m, tea.Quit
 			}
-			chat := initialChat(string(i), m.base)
+			chat := initialChat(i.username, m.base)
 			return chat, chat.Init()
 		}
 	}
