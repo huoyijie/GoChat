@@ -43,7 +43,6 @@ func initialChat(to string, base base) chat {
 	ta.ShowLineNumbers = false
 
 	vp := viewport.New(40, 10)
-	vp.SetContent(`输入消息按回车键发送`)
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
