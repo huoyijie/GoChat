@@ -47,17 +47,14 @@ func makeFgStyle(color string) func(string) string {
 
 // 每个 ui 对象可嵌入 base 对象
 type base struct {
-	// 通过 msgChan 接收新的未读消息
-	msgChan <-chan *lib.Msg
 	// 通过 reqChan 向服务器发送请求
 	poster lib.Post
 	// 通过 storage 读写本地存储
 	storage *Storage
 }
 
-func initialBase(msgChan <-chan *lib.Msg, poster lib.Post, storage *Storage) base {
+func initialBase(poster lib.Post, storage *Storage) base {
 	return base{
-		msgChan,
 		poster,
 		storage,
 	}

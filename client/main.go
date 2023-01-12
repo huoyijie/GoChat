@@ -66,7 +66,7 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 }
 
 // 从服务器接收 packet 并进行处理
-func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t) {
+func recvFrom(conn net.Conn, resChan chan<- *response_t, storage *Storage) {
 	lib.RecvFrom(
 		conn,
 		// 从服务器接收 packet 的处理函数
@@ -76,10 +76,13 @@ func recvFrom(conn net.Conn, msgChan chan<- *lib.Msg, resChan chan<- *response_t
 			case lib.PackKind_MSG:
 				msg := &lib.Msg{}
 				if err := lib.Unmarshal(pack.Data, msg); err == nil {
-					// 如果 msgChan 通道的另一侧没有准备好接收数据，把消息写入 msgChan 会导致当前协程阻塞。开启一个独立协程并写入消息到 msgChan
-					go func() {
-						msgChan <- msg
-					}()
+					// 新消息写入本地存储
+					storage.NewMsg(&Message{
+						Id:   msg.Id,
+						Kind: int32(msg.Kind),
+						From: msg.From,
+						Data: msg.Data,
+					})
 				}
 			// 当前连接遇到系统异常，退出进程
 			case lib.PackKind_ERR:
@@ -125,8 +128,8 @@ func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
 }
 
 // 渲染 UI
-func renderUI(poster lib.Post, msgChan <-chan *lib.Msg, storage *Storage) {
-	b := initialBase(msgChan, poster, storage)
+func renderUI(poster lib.Post, storage *Storage) {
+	b := initialBase(poster, storage)
 
 	var m tea.Model
 	if renderHome(poster, storage) {
@@ -174,14 +177,13 @@ func main() {
 
 	reqChan := make(chan *request_t)
 	resChan := make(chan *response_t)
-	msgChan := make(chan *lib.Msg)
 
 	// 启动单独的协程，发送请求并接收响应
 	go sendTo(conn, reqChan, resChan)
 
 	// 启动单独的协程，接收处理或转发来自服务器的 packet
-	go recvFrom(conn, msgChan, resChan)
+	go recvFrom(conn, resChan, storage)
 
 	// 渲染 UI
-	renderUI(newPoster(reqChan), msgChan, storage)
+	renderUI(newPoster(reqChan), storage)
 }

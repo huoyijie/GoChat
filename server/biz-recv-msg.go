@@ -34,7 +34,7 @@ func (rm *recv_msg) do(req proto.Message, accId *uint64, accUN *string) error {
 	return rm.storage.NewMsg(&Message{
 		// 生成消息 ID
 		Id:   int64(rm.node.Generate()),
-		Kind: uint32(lib.MsgKind_TEXT),
+		Kind: int32(lib.MsgKind_TEXT),
 		From: msg.From,
 		To:   msg.To,
 		Data: msg.Data,

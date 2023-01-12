@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -13,13 +14,14 @@ import (
 )
 
 type (
-	errMsg error
+	errMsg  error
+	tickMsg time.Time
 )
 
-func recvMsg(msgChan <-chan *lib.Msg) tea.Cmd {
-	return func() tea.Msg {
-		return <-msgChan
-	}
+func tick() tea.Cmd {
+	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }
 
 type chat struct {
@@ -70,7 +72,7 @@ func initialChat(to string, base base) chat {
 }
 
 func (m chat) Init() tea.Cmd {
-	return tea.Batch(recvMsg(m.msgChan), textarea.Blink)
+	return tea.Batch(tick(), textarea.Blink)
 }
 
 func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -105,11 +107,14 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 		}
 
-	case *lib.Msg:
-		m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", msg.From))+string(msg.Data))
+	case tickMsg:
+		msgList, _ := m.storage.GetMsgList(m.to)
+		for i := range msgList {
+			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", msgList[i].From))+string(msgList[i].Data))
+		}
 		m.viewport.SetContent(strings.Join(m.messages, "\n"))
 		m.viewport.GotoBottom()
-		return m, recvMsg(m.msgChan)
+		return m, tick()
 
 	// We handle errors just like any other message
 	case errMsg:

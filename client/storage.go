@@ -27,6 +27,14 @@ type KeyValue struct {
 	Value string
 }
 
+// 本地聊天记录
+type Message struct {
+	Id   int64 `gorm:"primaryKey;autoIncrement:false"`
+	Kind int32
+	From string
+	Data []byte
+}
+
 // 客户端本地存储
 type Storage struct {
 	db *gorm.DB
@@ -41,7 +49,8 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 		if err := s.db.Transaction(func(tx *gorm.DB) error {
 			// 自动根据模型更新表结构
 			var kv KeyValue
-			if err := tx.AutoMigrate(&kv); err != nil {
+			var message Message
+			if err := tx.AutoMigrate(&kv, &message); err != nil {
 				return err
 			}
 			return nil
@@ -65,5 +74,27 @@ func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
 func (s *Storage) GetValue(key string) (kv *KeyValue, err error) {
 	kv = &KeyValue{Key: key}
 	err = s.db.First(kv).Error
+	return
+}
+
+// 收到新未读消息
+func (s *Storage) NewMsg(msg *Message) (err error) {
+	err = s.db.Create(msg).Error
+	return
+}
+
+// 获取某个用户发给自己的未读消息列表
+func (s *Storage) GetMsgList(from string) (msgList []Message, err error) {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("`from` = ?", from).Find(&msgList).Order("id").Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("`from` = ?", from).Delete(&Message{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 	return
 }

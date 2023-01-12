@@ -28,7 +28,7 @@ type Account struct {
 
 type Message struct {
 	Id   int64 `gorm:"primaryKey;autoIncrement:false"`
-	Kind uint32
+	Kind int32
 	From string
 	To   string
 	Data []byte
