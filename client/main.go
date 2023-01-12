@@ -128,7 +128,7 @@ func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
 }
 
 // 渲染 UI
-func renderUI(poster lib.Post, storage *Storage) {
+func renderUI(poster lib.Post, storage *Storage) (err error) {
 	b := initialBase(poster, storage)
 
 	var m tea.Model
@@ -140,8 +140,8 @@ func renderUI(poster lib.Post, storage *Storage) {
 
 	p := tea.NewProgram(m)
 
-	_, err := p.Run()
-	lib.FatalNotNil(err)
+	_, err = p.Run()
+	return
 }
 
 // 存储文件名字环境变量
@@ -180,10 +180,17 @@ func main() {
 	storage, err := new(Storage).Init(dbPath())
 	lib.FatalNotNil(err)
 
-	// 客户端进行 tcp 拨号，请求连接服务器
-	conn, err := net.Dial("tcp", svrAddr())
-	// 连接遇到错误则退出进程
-	lib.FatalNotNil(err)
+	var conn net.Conn
+loop:
+	for {
+		// 客户端进行 tcp 拨号，请求连接服务器
+		if conn, err = net.Dial("tcp", svrAddr()); err != nil {
+			// 遇到连接错误后，1s后自动重新连接
+			time.Sleep(time.Second)
+		} else {
+			break loop
+		}
+	}
 
 	reqChan := make(chan *request_t)
 	resChan := make(chan *response_t)
@@ -195,5 +202,6 @@ func main() {
 	go recvFrom(conn, resChan, storage)
 
 	// 渲染 UI
-	renderUI(newPoster(reqChan), storage)
+	err = renderUI(newPoster(reqChan), storage)
+	lib.FatalNotNil(err)
 }
