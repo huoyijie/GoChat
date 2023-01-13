@@ -106,15 +106,15 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+		switch keypress := msg.String(); keypress {
+		case "q", tea.KeyEsc.String(), tea.KeyCtrlC.String():
 			return m, tea.Quit
-		case tea.KeyCtrlX:
+		case tea.KeyCtrlX.String():
 			// 删除本地存储文件
 			dropDB()
 			home := initialHome(m.base)
 			return home, home.Init()
-		case tea.KeyEnter:
+		case tea.KeyEnter.String():
 			i, ok := m.list.SelectedItem().(item)
 			if !ok {
 				return m, tea.Quit

@@ -62,3 +62,7 @@ func (b *base) toPacket(req proto.Message) (pack *lib.Packet, err error) {
 	}
 	return
 }
+
+func (b *base) close() {
+	b.poster.Close()
+}

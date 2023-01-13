@@ -9,4 +9,7 @@ type Post interface {
 
 	// 发送非同步请求
 	Send(req proto.Message) error
+
+	// 关闭并清理资源
+	Close()
 }

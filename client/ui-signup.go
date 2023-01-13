@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -31,11 +30,7 @@ func signupSubmit(m *form) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if err := m.storage.NewKVS([]KeyValue{
-		{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
-		{Key: "username", Value: tokenRes.Username},
-		{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
-	}); err != nil {
+	if err := m.storage.StoreToken(tokenRes); err != nil {
 		return m, tea.Quit
 	}
 

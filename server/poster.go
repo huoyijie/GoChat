@@ -27,6 +27,7 @@ func newPoster(packChan chan<- *lib.Packet) *poster {
 	return &poster{packChan}
 }
 
+// Handle implements lib.Post
 func (p *poster) Handle(req, res proto.Message) (err error) {
 	pack, ok := req.(*lib.Packet)
 	if !ok {
@@ -51,6 +52,7 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 	return
 }
 
+// Send implements lib.Post
 func (p *poster) Send(res proto.Message) (err error) {
 	var kind lib.PackKind
 	switch res.(type) {
@@ -72,6 +74,11 @@ func (p *poster) Send(res proto.Message) (err error) {
 		Data: bytes,
 	}
 	return
+}
+
+// Close implements lib.Post
+func (p *poster) Close() {
+	close(p.packChan)
 }
 
 var _ lib.Post = (*poster)(nil)

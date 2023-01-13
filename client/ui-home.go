@@ -33,19 +33,19 @@ func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case "q", "esc", "ctrl+c":
+		case "q", tea.KeyEsc.String(), tea.KeyCtrlC.String():
 			return m, tea.Quit
-		case "j", "down":
+		case "j", tea.KeyDown.String():
 			m.choice++
 			if m.choice > len(choices)-1 {
 				m.choice = len(choices) - 1
 			}
-		case "k", "up":
+		case "k", tea.KeyUp.String():
 			m.choice--
 			if m.choice < CHOICE_SIGNUP {
 				m.choice = CHOICE_SIGNUP
 			}
-		case "enter":
+		case tea.KeyEnter.String():
 			var next tea.Model
 			if m.choice == CHOICE_SIGNIN {
 				next = initialSignin(m.base)

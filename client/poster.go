@@ -33,6 +33,7 @@ func newPoster(reqChan chan<- *request_t) *poster {
 	return &poster{reqChan}
 }
 
+// Handle implements lib.Post
 func (p *poster) Handle(req, res proto.Message) (err error) {
 	kind, err := syncRequestToKind(req)
 	if err != nil { // 转换同步请求类型
@@ -56,6 +57,7 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 	return
 }
 
+// Send implements lib.Post
 func (p *poster) Send(req proto.Message) (err error) {
 	var kind lib.PackKind
 	switch req.(type) {
@@ -73,6 +75,11 @@ func (p *poster) Send(req proto.Message) (err error) {
 	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
 	p.reqChan <- request
 	return
+}
+
+// Close implements lib.Post
+func (p *poster) Close() {
+	close(p.reqChan)
 }
 
 var _ lib.Post = (*poster)(nil)

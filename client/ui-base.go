@@ -60,7 +60,7 @@ func tick() tea.Cmd {
 
 // 每个 ui 对象可嵌入 base 对象
 type base struct {
-	// 通过 reqChan 向服务器发送请求
+	// 通过 poster 向服务器发送请求
 	poster lib.Post
 	// 通过 storage 读写本地存储
 	storage *Storage
@@ -71,4 +71,8 @@ func initialBase(poster lib.Post, storage *Storage) base {
 		poster,
 		storage,
 	}
+}
+
+func (b *base) close() {
+	b.poster.Close()
 }

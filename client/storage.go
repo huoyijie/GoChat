@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/huoyijie/GoChat/lib"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -74,6 +77,16 @@ func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
 func (s *Storage) GetValue(key string) (kv *KeyValue, err error) {
 	kv = &KeyValue{Key: key}
 	err = s.db.First(kv).Error
+	return
+}
+
+// 存储 token 对象
+func (s *Storage) StoreToken(tokenRes *lib.TokenRes) (err error) {
+	err = s.NewKVS([]KeyValue{
+		{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
+		{Key: "username", Value: tokenRes.Username},
+		{Key: "token", Value: base64.StdEncoding.EncodeToString(tokenRes.Token)},
+	})
 	return
 }
 
