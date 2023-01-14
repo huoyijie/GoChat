@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
@@ -227,16 +229,20 @@ func svrAddr() string {
 	return svrAddr
 }
 
-// 连接服务器，最多重试20次
+// 连接服务器，连接失败按照指数回退策略重试，最多重试20次
 func connect() (net.Conn, error) {
 	for i := 0; i < 20; i++ {
 		// 客户端进行 tcp 拨号，请求连接服务器
-		if conn, err := net.Dial("tcp", svrAddr()); err != nil {
-			// 遇到连接错误后，1s后自动重新连接
-			time.Sleep(time.Second)
-		} else {
+		if conn, err := net.Dial("tcp", svrAddr()); err == nil {
 			return conn, nil
 		}
+
+		p := math.Pow(2, float64(i))
+		r := float64(rand.Intn(1000))
+		d := time.Duration(math.Min(p+r, 32000))
+
+		// 遇到连接错误后，1s后自动重新连接
+		time.Sleep(d * time.Millisecond)
 	}
 	return nil, errors.New("connect error")
 }
