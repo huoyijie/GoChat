@@ -253,15 +253,22 @@ func main() {
 	var poster lib.Post = newPoster(reqChan)
 	go renderUI(poster, storage)
 
+	var reconnect bool
+
 	for {
 		// 连接服务器
 		conn, err := connect()
 		lib.FatalNotNil(err)
 
-		// // 如果已登录，则需要重新验证 token
-		// if tokenRes, err := validateToken(poster, storage); err == nil {
-		// 	storage.StoreToken(tokenRes)
-		// }
+		// 重新连接需要验证 token
+		if reconnect {
+			go func() {
+				if tokenRes, err := validateToken(poster, storage); err == nil {
+					storage.StoreToken(tokenRes)
+				}
+			}()
+			reconnect = false
+		}
 
 		// 响应 channel
 		resChan := make(chan *response_t)
@@ -273,5 +280,7 @@ func main() {
 		if quit := sendTo(conn, reqChan, resChan); quit {
 			return
 		}
+
+		reconnect = true
 	}
 }
