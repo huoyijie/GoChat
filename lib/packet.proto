@@ -27,6 +27,14 @@ message Packet {
   bytes    data = 3;
 }
 
+message Ping{
+  bytes payload = 1;
+}
+
+message Pong{
+  bytes payload = 1;
+}
+
 message Auth {
   string username = 1;
   bytes  passhash = 2;

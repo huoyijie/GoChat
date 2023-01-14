@@ -103,6 +103,8 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *st
 // 根据 kind 返回对应的后台处理逻辑 biz
 func kindToBiz(kind lib.PackKind, b base, node *snowflake.Node) (biz biz, err error) {
 	switch kind {
+	case lib.PackKind_PING:
+		biz = initialPing(b)
 	case lib.PackKind_SIGNUP:
 		biz = initialSignup(b)
 	case lib.PackKind_SIGNIN:

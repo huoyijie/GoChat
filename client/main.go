@@ -28,6 +28,21 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 	// 同步请求超时检查间隔 50ms
 	timeoutTicker := time.NewTicker(50 * time.Millisecond)
 	defer timeoutTicker.Stop()
+	pingTicker := time.NewTicker(20 * time.Second)
+	defer pingTicker.Stop()
+
+	var sendPack = func(pack *lib.Packet) (err error) {
+		id++
+		pack.Id = id
+
+		bytes, err := lib.MarshalPack(pack)
+		if err != nil { // 序列化 packet 错误
+			return
+		}
+
+		_, err = conn.Write(bytes)
+		return
+	}
 
 	for {
 		select {
@@ -39,15 +54,7 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 				return
 			}
 
-			id++
-			request.pack.Id = id
-
-			bytes, err := lib.MarshalPack(request.pack)
-			if err != nil { // 序列化 packet 错误
-				return
-			}
-
-			if _, err = conn.Write(bytes); err != nil { // 发送字节数据错误
+			if err := sendPack(request.pack); err != nil { // 发送字节数据错误
 				return
 			}
 
@@ -80,6 +87,20 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 					delete(requests, id)
 				}
 			}
+
+		// ping
+		case <-pingTicker.C:
+			bytes, err := lib.Marshal(&lib.Ping{Payload: []byte("天王盖地虎")})
+			if err != nil {
+				return
+			}
+
+			if err := sendPack(&lib.Packet{
+				Kind: lib.PackKind_PING,
+				Data: bytes,
+			}); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -87,6 +108,14 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 // 从服务器接收 packet 的处理函数
 func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *Storage) (err error) {
 	switch pack.Kind {
+
+	// pong
+	case lib.PackKind_PONG:
+		pong := &lib.Pong{}
+		if err := lib.Unmarshal(pack.Data, pong); err != nil {
+			return err
+		}
+		// log.Println(string(pong.Payload))
 
 	// 当前连接的登录用户收到新未读消息
 	case lib.PackKind_MSG:

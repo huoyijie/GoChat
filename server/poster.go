@@ -57,6 +57,8 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 func (p *poster) Send(res proto.Message) (err error) {
 	var kind lib.PackKind
 	switch res.(type) {
+	case *lib.Pong:
+		kind = lib.PackKind_PONG
 	case *lib.Msg:
 		kind = lib.PackKind_MSG
 	case *lib.ErrRes:
