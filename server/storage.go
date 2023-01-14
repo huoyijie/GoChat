@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -96,11 +97,12 @@ func (s *Storage) NewMsg(msg *Message) (err error) {
 
 func (s *Storage) GetMsgList(to string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("`to` = ?", to).Find(&msgList).Order("id").Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`to` = ?", to).Find(&msgList).Order("id").Error; err != nil {
 			return err
 		}
 
 		if err := tx.Where("`to` = ?", to).Delete(&Message{}).Error; err != nil {
+			msgList = nil
 			return err
 		}
 

@@ -99,11 +99,12 @@ func (s *Storage) NewMsg(msg *Message) (err error) {
 // 获取某个用户发给自己的未读消息列表
 func (s *Storage) GetMsgList(from string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("`from` = ?", from).Find(&msgList).Order("id").Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`from` = ?", from).Find(&msgList).Order("id").Error; err != nil {
 			return err
 		}
 
 		if err := tx.Where("`from` = ?", from).Delete(&Message{}).Error; err != nil {
+			msgList = nil
 			return err
 		}
 
