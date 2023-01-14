@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 
 	"github.com/huoyijie/GoChat/lib"
 	"google.golang.org/protobuf/proto"
@@ -45,15 +44,11 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 		return
 	}
 
-	log.Println(req)
-
 	p.packChan <- &lib.Packet{
 		Id:   pack.Id,
 		Kind: kind,
 		Data: bytes,
 	}
-
-	log.Println(res)
 
 	return
 }
@@ -79,8 +74,6 @@ func (p *poster) Send(res proto.Message) (err error) {
 		Kind: kind,
 		Data: bytes,
 	}
-
-	log.Println(res)
 
 	return
 }

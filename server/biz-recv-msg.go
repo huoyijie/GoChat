@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/bwmarrin/snowflake"
 	"github.com/huoyijie/GoChat/lib"
 	"google.golang.org/protobuf/proto"
@@ -33,7 +31,6 @@ func (rm *recv_msg) do(req proto.Message, accId *uint64, accUN *string) error {
 		return rm.poster.Send(&lib.ErrRes{Code: lib.Err_Unmarshal.Val()})
 	}
 
-	log.Println(*accUN, msg)
 	return rm.storage.NewMsg(&Message{
 		// 生成消息 ID
 		Id:   int64(rm.node.Generate()),
