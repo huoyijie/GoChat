@@ -109,7 +109,6 @@ func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *Storage) 
 			return
 		}
 		err = fmt.Errorf("系统异常: %d", errRes.Code)
-		lib.LogNotNil(err)
 
 	// 收到同步请求的响应
 	case lib.PackKind_RES:
