@@ -19,7 +19,7 @@ func (u *users) do(req proto.Message, accId *uint64, accUN *string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if len(*accUN) == 0 {
 		return u.poster.Handle(pack, &lib.UsersRes{Code: lib.Err_Forbidden.Val()})
 	}

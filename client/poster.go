@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/huoyijie/GoChat/lib"
 	"google.golang.org/protobuf/proto"
@@ -46,10 +47,11 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 	}
 
 	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
+
 	p.reqChan <- request
 	response := <-request.c
 	if !response.ok() { // 同步请求超时
-		err = errors.New("请求超时")
+		err = fmt.Errorf("%s 请求超时", kind)
 		return
 	}
 
@@ -73,6 +75,7 @@ func (p *poster) Send(req proto.Message) (err error) {
 	}
 
 	request := newRequest(&lib.Packet{Kind: kind, Data: bytes})
+
 	p.reqChan <- request
 	return
 }

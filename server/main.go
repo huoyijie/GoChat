@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -30,15 +31,26 @@ func signalHandler() {
 }
 
 // 把来自 packChan 的 packet 都发送到 conn
-func sendTo(conn net.Conn, b base, interval *time.Ticker, packChan <-chan *lib.Packet, accId *uint64, accUN *string) {
-	// 从当前方法返回后，断开连接，清理资源等
-	defer conn.Close()
+func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *string, storage *Storage) {
+	// 间隔 100ms 检查是否有新消息
+	interval := time.NewTicker(100 * time.Millisecond)
 	defer interval.Stop()
+	var pid uint64
 
-	var (
-		fw_msg biz = initialFwMsg(b)
-		pid    uint64
-	)
+	var sendPack = func(pack *lib.Packet) (err error) {
+		if pack.Id == 0 {
+			pid++
+			pack.Id = pid
+		}
+
+		bytes, err := lib.MarshalPack(pack)
+		if err != nil {
+			return err
+		}
+
+		_, err = conn.Write(bytes)
+		return
+	}
 
 	for {
 		select {
@@ -46,27 +58,45 @@ func sendTo(conn net.Conn, b base, interval *time.Ticker, packChan <-chan *lib.P
 		// 发送 packet 到服务器
 		case pack, ok := <-packChan:
 			if !ok { // recvFrom 协程已退出，需要退出当前协程
+				log.Println("recvFrom quit")
 				return
 			}
 
-			if pack.Id == 0 {
-				pid++
-				pack.Id = pid
-			}
-
-			bytes, err := lib.MarshalPack(pack)
-			if err != nil {
-				return
-			}
-
-			_, err = conn.Write(bytes)
-			if err != nil {
+			if err := sendPack(pack); err != nil {
+				log.Println(err)
 				return
 			}
 
 		// 读取并转发所有发送给当前用户的未读消息
 		case <-interval.C:
-			fw_msg.do(nil, accId, accUN)
+			if len(*accUN) > 0 { // accUN 用户已登录客户端
+				// 查询所有发送给 accUN 的未读消息
+				msgList, _ := storage.GetMsgList(*accUN)
+				for i := range msgList {
+					msg := &lib.Msg{
+						Id:   msgList[i].Id,
+						Kind: lib.MsgKind(msgList[i].Kind),
+						From: msgList[i].From,
+						To:   msgList[i].To,
+						Data: msgList[i].Data,
+					}
+
+					bytes, err := lib.Marshal(msg)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+
+					// 转发消息
+					if err := sendPack(&lib.Packet{
+						Kind: lib.PackKind_MSG,
+						Data: bytes,
+					}); err != nil {
+						log.Println(err)
+						return
+					}
+				}
+			}
 		}
 	}
 }
@@ -91,9 +121,8 @@ func kindToBiz(kind lib.PackKind, b base, node *snowflake.Node) (biz biz, err er
 }
 
 // 读取并处理客户端发送的 packet
-func recvFrom(conn net.Conn, b base, interval *time.Ticker, accId *uint64, accUN *string, node *snowflake.Node) {
+func recvFrom(conn net.Conn, b base, accId *uint64, accUN *string, node *snowflake.Node) {
 	defer b.close()
-	defer interval.Stop()
 
 	// 设置如何处理接收到的字节流，SplitFunc 会根据 packet 开头 length 把字节流分割为消息流
 	scanner := bufio.NewScanner(conn)
@@ -104,23 +133,29 @@ func recvFrom(conn net.Conn, b base, interval *time.Ticker, accId *uint64, accUN
 		// 把 scanner 解析出的消息字节 slice 解析为 Pack
 		pack := &lib.Packet{}
 		if err := lib.Unmarshal(scanner.Bytes(), pack); err != nil {
+			log.Println(err)
 			return
 		}
 
 		// 获取 packet 处理逻辑
 		biz, err := kindToBiz(pack.Kind, b, node)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 
 		// 执行 packet 处理逻辑
 		if err := biz.do(pack, accId, accUN); err != nil {
+			log.Println(err)
 			return
 		}
 	}
 }
 
 func handleConn(conn net.Conn, storage *Storage, node *snowflake.Node) {
+	// 从当前方法返回后，断开连接，清理资源等
+	defer conn.Close()
+
 	// 当前连接所登录的用户
 	var (
 		accId uint64
@@ -131,14 +166,12 @@ func handleConn(conn net.Conn, storage *Storage, node *snowflake.Node) {
 	packChan := make(chan *lib.Packet)
 	var poster lib.Post = newPoster(packChan)
 	base := initialBase(poster, storage)
-	// 间隔 100ms 检查是否有新消息
-	interval := time.NewTicker(100 * time.Millisecond)
 
 	// 为每个客户端启动一个协程，读取并处理客户端发送的 packet
-	go recvFrom(conn, base, interval, &accId, &accUN, node)
+	go recvFrom(conn, base, &accId, &accUN, node)
 
 	// 为每个客户端启动一个协程，把来自 packChan 的 packet 都发送到 conn
-	sendTo(conn, base, interval, packChan, &accId, &accUN)
+	sendTo(conn, packChan, &accId, &accUN, storage)
 }
 
 func main() {
