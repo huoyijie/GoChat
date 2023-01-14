@@ -58,7 +58,6 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *st
 		// 发送 packet 到服务器
 		case pack, ok := <-packChan:
 			if !ok { // recvFrom 协程已退出，需要退出当前协程
-				log.Println("recvFrom quit")
 				return
 			}
 
