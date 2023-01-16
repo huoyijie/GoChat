@@ -8,16 +8,16 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type signin struct {
-	base
+type biz_signin_t struct {
+	biz_base_t
 }
 
-func initialSignin(base base) *signin {
-	return &signin{base}
+func initialSignin(base biz_base_t) *biz_signin_t {
+	return &biz_signin_t{base}
 }
 
 // 处理登录请求
-func (s *signin) do(req proto.Message, accId *uint64, accUN *string) error {
+func (s *biz_signin_t) do(req proto.Message, accId *uint64, accUN *string) error {
 	pack, err := s.toPacket(req)
 	if err != nil {
 		return err
@@ -45,4 +45,4 @@ func (s *signin) do(req proto.Message, accId *uint64, accUN *string) error {
 	return s.handleAuth(pack, account, accId, accUN)
 }
 
-var _ biz = (*signin)(nil)
+var _ biz_i = (*biz_signin_t)(nil)

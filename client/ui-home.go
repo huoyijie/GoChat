@@ -16,20 +16,20 @@ const (
 	CHOICE_SIGNIN
 )
 
-type home struct {
-	base
+type ui_home_t struct {
+	ui_base_t
 	choice int
 }
 
-func initialHome(base base) home {
-	return home{choice: CHOICE_SIGNIN, base: base}
+func initialHome(base ui_base_t) ui_home_t {
+	return ui_home_t{choice: CHOICE_SIGNIN, ui_base_t: base}
 }
 
-func (m home) Init() tea.Cmd {
+func (m ui_home_t) Init() tea.Cmd {
 	return nil
 }
 
-func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ui_home_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -48,9 +48,9 @@ func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter.String():
 			var next tea.Model
 			if m.choice == CHOICE_SIGNIN {
-				next = initialSignin(m.base)
+				next = initialSignin(m.ui_base_t)
 			} else {
-				next = initialSignup(m.base)
+				next = initialSignup(m.ui_base_t)
 			}
 			return next, next.Init()
 		}
@@ -58,7 +58,7 @@ func (m home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m home) View() string {
+func (m ui_home_t) View() string {
 	tpl := "%s\n\n"
 	tpl += subtle("↑/k up") + dot + subtle("↓/j down") + dot + subtle("enter select") + dot + subtle("q/esc quit")
 
@@ -72,4 +72,4 @@ func (m home) View() string {
 	return indent.String("\n"+s+"\n\n", 4)
 }
 
-var _ tea.Model = (*home)(nil)
+var _ tea.Model = (*ui_home_t)(nil)

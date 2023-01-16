@@ -7,16 +7,16 @@ import (
 )
 
 // 处理发送消息请求
-type recv_msg struct {
-	base
+type biz_recv_msg_t struct {
+	biz_base_t
 	node *snowflake.Node
 }
 
-func initialRecvMsg(base base, node *snowflake.Node) *recv_msg {
-	return &recv_msg{base, node}
+func initialRecvMsg(base biz_base_t, node *snowflake.Node) *biz_recv_msg_t {
+	return &biz_recv_msg_t{base, node}
 }
 
-func (rm *recv_msg) do(req proto.Message, accId *uint64, accUN *string) error {
+func (rm *biz_recv_msg_t) do(req proto.Message, accId *uint64, accUN *string) error {
 	pack, err := rm.toPacket(req)
 	if err != nil {
 		return err
@@ -41,4 +41,4 @@ func (rm *recv_msg) do(req proto.Message, accId *uint64, accUN *string) error {
 	})
 }
 
-var _ biz = (*recv_msg)(nil)
+var _ biz_i = (*biz_recv_msg_t)(nil)

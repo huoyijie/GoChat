@@ -62,11 +62,11 @@ func passwordLenCheck(s string) (ok bool, hint string) {
 }
 
 // 表单提交处理函数
-type submit_fn = func(*form) (tea.Model, tea.Cmd)
+type submit_fn = func(*ui_form_t) (tea.Model, tea.Cmd)
 
 // 登录和注册表单基类
-type form struct {
-	base
+type ui_form_t struct {
+	ui_base_t
 	focusIndex int
 	inputs     []textinput.Model
 	errs       []string
@@ -78,9 +78,9 @@ type form struct {
 	submit     submit_fn
 }
 
-func initialForm(base base, inputs int, labels []string, button string, lenChecks []check_fn, submit submit_fn) form {
-	return form{
-		base:      base,
+func initialForm(base ui_base_t, inputs int, labels []string, button string, lenChecks []check_fn, submit submit_fn) ui_form_t {
+	return ui_form_t{
+		ui_base_t: base,
 		inputs:    make([]textinput.Model, inputs),
 		errs:      make([]string, inputs),
 		hint:      "",
@@ -91,11 +91,11 @@ func initialForm(base base, inputs int, labels []string, button string, lenCheck
 	}
 }
 
-func (m form) Init() tea.Cmd {
+func (m ui_form_t) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m *form) updateInputs(msg tea.Msg) tea.Cmd {
+func (m *ui_form_t) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
@@ -109,7 +109,7 @@ func (m *form) updateInputs(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ui_form_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keyType := msg.Type; keyType {
@@ -179,7 +179,7 @@ func (m form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m form) View() string {
+func (m ui_form_t) View() string {
 	var b strings.Builder
 
 	if len(m.hint) > 0 {
@@ -218,4 +218,4 @@ func (m form) View() string {
 	return indent.String("\n"+b.String()+"\n\n", 4)
 }
 
-var _ tea.Model = (*form)(nil)
+var _ tea.Model = (*ui_form_t)(nil)

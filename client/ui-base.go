@@ -48,31 +48,31 @@ func makeFgStyle(color string) func(string) string {
 }
 
 type (
-	errMsg  error
-	tickMsg time.Time
+	err_msg_t  error
+	tick_msg_t time.Time
 )
 
 func tick() tea.Cmd {
 	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
-		return tickMsg(t)
+		return tick_msg_t(t)
 	})
 }
 
-// 每个 ui 对象可嵌入 base 对象
-type base struct {
+// 每个 ui 对象可嵌入 ui_base_t 对象
+type ui_base_t struct {
 	// 通过 poster 向服务器发送请求
 	poster lib.Post
 	// 通过 storage 读写本地存储
-	storage *Storage
+	storage *storage_t
 }
 
-func initialBase(poster lib.Post, storage *Storage) base {
-	return base{
+func initialBase(poster lib.Post, storage *storage_t) ui_base_t {
+	return ui_base_t{
 		poster,
 		storage,
 	}
 }
 
-func (b *base) close() {
+func (b *ui_base_t) close() {
 	b.poster.Close()
 }

@@ -22,20 +22,20 @@ var (
 	usersHelpStyle    = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
 
-type item struct {
+type item_t struct {
 	username string
 	msgCount uint32
 }
 
-func (i item) FilterValue() string { return "" }
+func (i item_t) FilterValue() string { return "" }
 
-type itemDelegate struct{}
+type item_proxy_t struct{}
 
-func (d itemDelegate) Height() int                               { return 1 }
-func (d itemDelegate) Spacing() int                              { return 0 }
-func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
+func (d item_proxy_t) Height() int                               { return 1 }
+func (d item_proxy_t) Spacing() int                              { return 0 }
+func (d item_proxy_t) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d item_proxy_t) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item_t)
 	if !ok {
 		return
 	}
@@ -57,12 +57,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprint(w, fn(str))
 }
 
-type users struct {
-	base
+type ui_users_t struct {
+	ui_base_t
 	list list.Model
 }
 
-func initialUsers(base base) users {
+func initialUsers(base ui_base_t) ui_users_t {
 	usersRes := &lib.UsersRes{}
 	if err := base.poster.Handle(&lib.Users{}, usersRes); err != nil {
 		lib.FatalNotNil(err)
@@ -75,7 +75,7 @@ func initialUsers(base base) users {
 
 	items := make([]list.Item, len(usersRes.Users))
 	for i := range usersRes.Users {
-		items[i] = item{
+		items[i] = item_t{
 			username: usersRes.Users[i],
 			msgCount: unReadMsgCnt[usersRes.Users[i]],
 		}
@@ -83,7 +83,7 @@ func initialUsers(base base) users {
 
 	const defaultWidth = 20
 
-	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+	l := list.New(items, item_proxy_t{}, defaultWidth, listHeight)
 	l.Title = "用户列表"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
@@ -92,14 +92,14 @@ func initialUsers(base base) users {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = usersHelpStyle
 
-	return users{list: l, base: base}
+	return ui_users_t{list: l, ui_base_t: base}
 }
 
-func (m users) Init() tea.Cmd {
+func (m ui_users_t) Init() tea.Cmd {
 	return tick()
 }
 
-func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ui_users_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
@@ -112,18 +112,18 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlX.String():
 			// 删除本地存储文件
 			dropDB()
-			home := initialHome(m.base)
+			home := initialHome(m.ui_base_t)
 			return home, home.Init()
 		case tea.KeyEnter.String():
-			i, ok := m.list.SelectedItem().(item)
+			i, ok := m.list.SelectedItem().(item_t)
 			if !ok {
 				return m, tea.Quit
 			}
-			chat := initialChat(i.username, m.base)
+			chat := initialChat(i.username, m.ui_base_t)
 			return chat, chat.Init()
 		}
 
-	case tickMsg:
+	case tick_msg_t:
 		unReadMsgCnt, err := m.storage.UnReadMsgCount()
 		if err != nil {
 			return m, nil
@@ -131,11 +131,11 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		var cmds []tea.Cmd
 		for i := range m.list.Items() {
-			v := m.list.Items()[i].(item)
+			v := m.list.Items()[i].(item_t)
 			if count, ok := unReadMsgCnt[v.username]; ok {
 				cmd := m.list.SetItem(
 					i,
-					item{
+					item_t{
 						username: v.username,
 						msgCount: count,
 					},
@@ -153,7 +153,7 @@ func (m users) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m users) View() string {
+func (m ui_users_t) View() string {
 	help := subtle("↑/k up") + dot + subtle("↓/j down") + dot + subtle("q/esc quit") + dot + subtle("ctrl+x sign out") + dot + subtle("? more")
 
 	s := fmt.Sprintf(
@@ -164,4 +164,4 @@ func (m users) View() string {
 	return indent.String(s, 4)
 }
 
-var _ tea.Model = (*users)(nil)
+var _ tea.Model = (*ui_users_t)(nil)

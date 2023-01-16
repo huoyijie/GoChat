@@ -9,15 +9,15 @@ import (
 )
 
 // 处理注册请求
-type signup struct {
-	base
+type biz_signup_t struct {
+	biz_base_t
 }
 
-func initialSignup(base base) *signup {
-	return &signup{base}
+func initialSignup(base biz_base_t) *biz_signup_t {
+	return &biz_signup_t{base}
 }
 
-func (s *signup) do(req proto.Message, accId *uint64, accUN *string) error {
+func (s *biz_signup_t) do(req proto.Message, accId *uint64, accUN *string) error {
 	pack, err := s.toPacket(req)
 	if err != nil {
 		return err
@@ -44,4 +44,4 @@ func (s *signup) do(req proto.Message, accId *uint64, accUN *string) error {
 	return s.handleAuth(pack, account, accId, accUN)
 }
 
-var _ biz = (*signup)(nil)
+var _ biz_i = (*biz_signup_t)(nil)

@@ -9,7 +9,7 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
-func signinSubmit(m *form) (tea.Model, tea.Cmd) {
+func signinSubmit(m *ui_form_t) (tea.Model, tea.Cmd) {
 	passhash := sha256.Sum256([]byte(m.inputs[1].Value()))
 
 	tokenRes := &lib.TokenRes{}
@@ -28,15 +28,15 @@ func signinSubmit(m *form) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	users := initialUsers(m.base)
+	users := initialUsers(m.ui_base_t)
 	return users, users.Init()
 }
 
-type signin struct {
-	form
+type ui_signin_t struct {
+	ui_form_t
 }
 
-func initialSignin(base base) signin {
+func initialSignin(base ui_base_t) ui_signin_t {
 	m := initialForm(
 		base,
 		2,
@@ -70,5 +70,5 @@ func initialSignin(base base) signin {
 		m.inputs[i] = t
 	}
 
-	return signin{form: m}
+	return ui_signin_t{ui_form_t: m}
 }

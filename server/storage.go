@@ -28,18 +28,17 @@ type Account struct {
 }
 
 type Message struct {
-	Id   int64 `gorm:"primaryKey;autoIncrement:false"`
-	Kind int32
-	From string
-	To   string
-	Data []byte
+	Id       int64 `gorm:"primaryKey;autoIncrement:false"`
+	Kind     int32
+	From, To string
+	Data     []byte
 }
 
-type Storage struct {
+type storage_t struct {
 	db *gorm.DB
 }
 
-func (s *Storage) Init(filePath string) (*Storage, error) {
+func (s *storage_t) Init(filePath string) (*storage_t, error) {
 	if db, err := gorm.Open(sqlite.Open(filePath), &gorm.Config{Logger: gormLogger}); err != nil {
 		return nil, err
 	} else {
@@ -58,24 +57,24 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 	}
 }
 
-func (s *Storage) NewAccount(account *Account) (err error) {
+func (s *storage_t) NewAccount(account *Account) (err error) {
 	err = s.db.Create(account).Error
 	return
 }
 
-func (s *Storage) GetAccountById(id uint64) (account *Account, err error) {
+func (s *storage_t) GetAccountById(id uint64) (account *Account, err error) {
 	account = &Account{Id: id}
 	err = s.db.First(account).Error
 	return
 }
 
-func (s *Storage) GetAccountByUN(username string) (account *Account, err error) {
+func (s *storage_t) GetAccountByUN(username string) (account *Account, err error) {
 	account = &Account{Username: username}
 	err = s.db.Where(account).First(account).Error
 	return
 }
 
-func (s *Storage) GetUsers(self string) (users []string, err error) {
+func (s *storage_t) GetUsers(self string) (users []string, err error) {
 	var accounts []Account
 	err = s.db.Select("username").Find(&accounts).Order("username").Error
 	if err != nil {
@@ -90,12 +89,12 @@ func (s *Storage) GetUsers(self string) (users []string, err error) {
 	return
 }
 
-func (s *Storage) NewMsg(msg *Message) (err error) {
+func (s *storage_t) NewMsg(msg *Message) (err error) {
 	err = s.db.Create(msg).Error
 	return
 }
 
-func (s *Storage) GetMsgList(to string) (msgList []Message, err error) {
+func (s *storage_t) GetMsgList(to string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`to` = ?", to).Find(&msgList).Order("id").Error; err != nil {
 			return err

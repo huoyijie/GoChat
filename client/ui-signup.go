@@ -9,7 +9,7 @@ import (
 	"github.com/huoyijie/GoChat/lib"
 )
 
-func signupSubmit(m *form) (tea.Model, tea.Cmd) {
+func signupSubmit(m *ui_form_t) (tea.Model, tea.Cmd) {
 	if m.inputs[1].Value() != m.inputs[2].Value() {
 		m.errs[1] = "两次密码输入不一致"
 		m.errs[2] = m.errs[1]
@@ -34,15 +34,15 @@ func signupSubmit(m *form) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	users := initialUsers(m.base)
+	users := initialUsers(m.ui_base_t)
 	return users, users.Init()
 }
 
-type signup struct {
-	form
+type ui_signup_t struct {
+	ui_form_t
 }
 
-func initialSignup(base base) signup {
+func initialSignup(base ui_base_t) ui_signup_t {
 	m := initialForm(
 		base,
 		3,
@@ -85,5 +85,5 @@ func initialSignup(base base) signup {
 		m.inputs[i] = t
 	}
 
-	return signup{form: m}
+	return ui_signup_t{ui_form_t: m}
 }

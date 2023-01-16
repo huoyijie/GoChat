@@ -6,15 +6,15 @@ import (
 )
 
 // 处理 token 验证请求
-type val_token struct {
-	base
+type biz_val_token_t struct {
+	biz_base_t
 }
 
-func initialValToken(base base) *val_token {
-	return &val_token{base}
+func initialValToken(base biz_base_t) *biz_val_token_t {
+	return &biz_val_token_t{base}
 }
 
-func (vt *val_token) do(req proto.Message, accId *uint64, accUN *string) error {
+func (vt *biz_val_token_t) do(req proto.Message, accId *uint64, accUN *string) error {
 	pack, err := vt.toPacket(req)
 	if err != nil {
 		return err
@@ -42,4 +42,4 @@ func (vt *val_token) do(req proto.Message, accId *uint64, accUN *string) error {
 	return vt.handleAuth(pack, account, accId, accUN)
 }
 
-var _ biz = (*val_token)(nil)
+var _ biz_i = (*biz_val_token_t)(nil)

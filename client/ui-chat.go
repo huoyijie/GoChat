@@ -12,8 +12,8 @@ import (
 	"github.com/muesli/reflow/indent"
 )
 
-type chat struct {
-	base
+type ui_chat_t struct {
+	ui_base_t
 	from        string
 	to          string
 	viewport    viewport.Model
@@ -23,7 +23,7 @@ type chat struct {
 	err         error
 }
 
-func initialChat(to string, base base) chat {
+func initialChat(to string, base ui_base_t) ui_chat_t {
 	kv, err := base.storage.GetValue("username")
 	lib.FatalNotNil(err)
 
@@ -46,8 +46,8 @@ func initialChat(to string, base base) chat {
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
-	return chat{
-		base:        base,
+	return ui_chat_t{
+		ui_base_t:   base,
 		from:        kv.Value,
 		to:          to,
 		textarea:    ta,
@@ -58,11 +58,11 @@ func initialChat(to string, base base) chat {
 	}
 }
 
-func (m chat) Init() tea.Cmd {
+func (m ui_chat_t) Init() tea.Cmd {
 	return tea.Batch(tick(), textarea.Blink)
 }
 
-func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ui_chat_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		tiCmd tea.Cmd
 		vpCmd tea.Cmd
@@ -77,7 +77,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		case tea.KeyCtrlR:
-			users := initialUsers(m.base)
+			users := initialUsers(m.ui_base_t)
 			return users, users.Init()
 		case tea.KeyEnter:
 			if len(strings.TrimSpace(m.textarea.Value())) == 0 {
@@ -94,7 +94,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 		}
 
-	case tickMsg:
+	case tick_msg_t:
 		msgList, _ := m.storage.GetMsgList(m.to)
 		for i := range msgList {
 			m.messages = append(m.messages, m.senderStyle.Render(fmt.Sprintf("%s: ", msgList[i].From))+string(msgList[i].Data))
@@ -104,7 +104,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tick()
 
 	// We handle errors just like any other message
-	case errMsg:
+	case err_msg_t:
 		m.err = msg
 		return m, nil
 	}
@@ -112,7 +112,7 @@ func (m chat) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(tiCmd, vpCmd)
 }
 
-func (m chat) View() string {
+func (m ui_chat_t) View() string {
 	help := subtle("enter send") + dot + subtle("ctrl+r back") + dot + subtle("esc quit")
 
 	s := fmt.Sprintf(
@@ -126,4 +126,4 @@ func (m chat) View() string {
 	return indent.String("\n"+s, 4)
 }
 
-var _ tea.Model = (*chat)(nil)
+var _ tea.Model = (*ui_chat_t)(nil)

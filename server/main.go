@@ -18,20 +18,20 @@ import (
 // 信号监听处理器
 func signalHandler() {
 	// 创建信号 channel
-	sigchan := make(chan os.Signal, 1)
+	sigChan := make(chan os.Signal, 1)
 
 	// 注册要监听哪些信号
-	signal.Notify(sigchan, os.Interrupt)    // ctrl+c
-	signal.Notify(sigchan, syscall.SIGTERM) // kill
+	signal.Notify(sigChan, os.Interrupt)    // ctrl+c
+	signal.Notify(sigChan, syscall.SIGTERM) // kill
 
 	// 一直阻塞，直到收到信号，恢复执行并退出进程
-	<-sigchan
+	<-sigChan
 	// 退出进程
 	defer os.Exit(0)
 }
 
 // 把来自 packChan 的 packet 都发送到 conn
-func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *string, storage *Storage) {
+func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *string, storage *storage_t) {
 	// 间隔 100ms 检查是否有新消息
 	interval := time.NewTicker(100 * time.Millisecond)
 	defer interval.Stop()
@@ -101,7 +101,7 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *st
 }
 
 // 根据 kind 返回对应的后台处理逻辑 biz
-func kindToBiz(kind lib.PackKind, b base, node *snowflake.Node) (biz biz, err error) {
+func kindToBiz(kind lib.PackKind, b biz_base_t, node *snowflake.Node) (biz biz_i, err error) {
 	switch kind {
 	case lib.PackKind_PING:
 		biz = initialPing(b)
@@ -122,7 +122,7 @@ func kindToBiz(kind lib.PackKind, b base, node *snowflake.Node) (biz biz, err er
 }
 
 // 读取并处理客户端发送的 packet
-func recvFrom(conn net.Conn, b base, accId *uint64, accUN *string, node *snowflake.Node) {
+func recvFrom(conn net.Conn, b biz_base_t, accId *uint64, accUN *string, node *snowflake.Node) {
 	defer b.close()
 
 	// 设置如何处理接收到的字节流，SplitFunc 会根据 packet 开头 length 把字节流分割为消息流
@@ -153,7 +153,7 @@ func recvFrom(conn net.Conn, b base, accId *uint64, accUN *string, node *snowfla
 	}
 }
 
-func handleConn(conn net.Conn, storage *Storage, node *snowflake.Node) {
+func handleConn(conn net.Conn, storage *storage_t, node *snowflake.Node) {
 	// 从当前方法返回后，断开连接，清理资源等
 	defer conn.Close()
 
@@ -180,7 +180,7 @@ func main() {
 	go signalHandler()
 
 	// 初始化存储
-	storage, err := new(Storage).Init(filepath.Join(lib.WorkDir, "server.db"))
+	storage, err := new(storage_t).Init(filepath.Join(lib.WorkDir, "server.db"))
 	lib.FatalNotNil(err)
 
 	// tcp 监听地址 0.0.0.0:8888

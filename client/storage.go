@@ -39,11 +39,11 @@ type Message struct {
 }
 
 // 客户端本地存储
-type Storage struct {
+type storage_t struct {
 	db *gorm.DB
 }
 
-func (s *Storage) Init(filePath string) (*Storage, error) {
+func (s *storage_t) Init(filePath string) (*storage_t, error) {
 	// 创建并打开数据库存储文件
 	if db, err := gorm.Open(sqlite.Open(filePath), &gorm.Config{Logger: gormLogger}); err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (s *Storage) Init(filePath string) (*Storage, error) {
 }
 
 // 批量插入 key/value 键值对
-func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
+func (s *storage_t) NewKVS(kvs []KeyValue) (err error) {
 	err = s.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "key"}},
 		DoUpdates: clause.AssignmentColumns([]string{"value"}),
@@ -74,14 +74,14 @@ func (s *Storage) NewKVS(kvs []KeyValue) (err error) {
 }
 
 // 根据 key 查询 value
-func (s *Storage) GetValue(key string) (kv *KeyValue, err error) {
+func (s *storage_t) GetValue(key string) (kv *KeyValue, err error) {
 	kv = &KeyValue{Key: key}
 	err = s.db.First(kv).Error
 	return
 }
 
 // 存储 token 对象
-func (s *Storage) StoreToken(tokenRes *lib.TokenRes) (err error) {
+func (s *storage_t) StoreToken(tokenRes *lib.TokenRes) (err error) {
 	err = s.NewKVS([]KeyValue{
 		{Key: "id", Value: fmt.Sprintf("%d", tokenRes.Id)},
 		{Key: "username", Value: tokenRes.Username},
@@ -91,13 +91,13 @@ func (s *Storage) StoreToken(tokenRes *lib.TokenRes) (err error) {
 }
 
 // 收到新未读消息
-func (s *Storage) NewMsg(msg *Message) (err error) {
+func (s *storage_t) NewMsg(msg *Message) (err error) {
 	err = s.db.Create(msg).Error
 	return
 }
 
 // 获取某个用户发给自己的未读消息列表
-func (s *Storage) GetMsgList(from string) (msgList []Message, err error) {
+func (s *storage_t) GetMsgList(from string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`from` = ?", from).Find(&msgList).Order("id").Error; err != nil {
 			return err
@@ -114,7 +114,7 @@ func (s *Storage) GetMsgList(from string) (msgList []Message, err error) {
 }
 
 // 获取当前登录用户的未读消息数量
-func (s *Storage) UnReadMsgCount() (msgCount map[string]uint32, err error) {
+func (s *storage_t) UnReadMsgCount() (msgCount map[string]uint32, err error) {
 	rows, err := s.db.Model(&Message{}).Select("from", "COUNT(*) as count").Group("from").Rows()
 	if err != nil {
 		return

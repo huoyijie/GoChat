@@ -19,16 +19,16 @@ func syncResponseToKind(m proto.Message) (kind lib.PackKind, err error) {
 }
 
 // 实现 post 接口
-type poster struct {
+type poster_t struct {
 	packChan chan<- *lib.Packet
 }
 
-func newPoster(packChan chan<- *lib.Packet) *poster {
-	return &poster{packChan}
+func newPoster(packChan chan<- *lib.Packet) *poster_t {
+	return &poster_t{packChan}
 }
 
 // Handle implements lib.Post
-func (p *poster) Handle(req, res proto.Message) (err error) {
+func (p *poster_t) Handle(req, res proto.Message) (err error) {
 	pack, ok := req.(*lib.Packet)
 	if !ok {
 		return errors.New("invalid request")
@@ -54,7 +54,7 @@ func (p *poster) Handle(req, res proto.Message) (err error) {
 }
 
 // Send implements lib.Post
-func (p *poster) Send(res proto.Message) (err error) {
+func (p *poster_t) Send(res proto.Message) (err error) {
 	var kind lib.PackKind
 	switch res.(type) {
 	case *lib.Pong:
@@ -81,8 +81,8 @@ func (p *poster) Send(res proto.Message) (err error) {
 }
 
 // Close implements lib.Post
-func (p *poster) Close() {
+func (p *poster_t) Close() {
 	close(p.packChan)
 }
 
-var _ lib.Post = (*poster)(nil)
+var _ lib.Post = (*poster_t)(nil)

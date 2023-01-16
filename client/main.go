@@ -108,7 +108,7 @@ func sendTo(conn net.Conn, reqChan <-chan *request_t, resChan <-chan *response_t
 }
 
 // 从服务器接收 packet 的处理函数
-func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *Storage) (err error) {
+func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *storage_t) (err error) {
 	switch pack.Kind {
 
 	// pong
@@ -152,7 +152,7 @@ func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *Storage) 
 }
 
 // 从服务器接收 packet 并进行处理
-func recvFrom(conn net.Conn, resChan chan<- *response_t, storage *Storage) {
+func recvFrom(conn net.Conn, resChan chan<- *response_t, storage *storage_t) {
 	// 协程退出前关闭 channel
 	defer close(resChan)
 
@@ -176,7 +176,7 @@ func recvFrom(conn net.Conn, resChan chan<- *response_t, storage *Storage) {
 }
 
 // 验证 token 是否有效
-func validateToken(poster lib.Post, storage *Storage) (tokenRes *lib.TokenRes, err error) {
+func validateToken(poster lib.Post, storage *storage_t) (tokenRes *lib.TokenRes, err error) {
 	kv, err := storage.GetValue("token")
 	if err != nil { // 未登录过
 		return
@@ -200,7 +200,7 @@ func validateToken(poster lib.Post, storage *Storage) (tokenRes *lib.TokenRes, e
 }
 
 // home 页面是选择注册或者登录页面。如果本地存储中 token 验证合法后可自动登录并刷新本地 token，然后进入用户列表页面。如果本地没有 token，或者验证 token 失败，则进入 home 页面。
-func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
+func renderHome(poster lib.Post, storage *storage_t) (renderHome bool) {
 	tokenRes, err := validateToken(poster, storage)
 	if err != nil {
 		return true
@@ -214,7 +214,7 @@ func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
 }
 
 // 渲染 UI
-func renderUI(poster lib.Post, storage *Storage, sigChan chan<- os.Signal) {
+func renderUI(poster lib.Post, storage *storage_t, sigChan chan<- os.Signal) {
 	b := initialBase(poster, storage)
 	defer b.close()
 
@@ -293,7 +293,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM) // kill
 
 	// 初始化存储
-	storage, err := new(Storage).Init(dbPath())
+	storage, err := new(storage_t).Init(dbPath())
 	lib.FatalNotNil(err)
 
 	// 请求 channel

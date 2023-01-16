@@ -6,15 +6,15 @@ import (
 )
 
 // 处理获取用户列表请求
-type users struct {
-	base
+type biz_users_t struct {
+	biz_base_t
 }
 
-func initialUsers(base base) *users {
-	return &users{base}
+func initialUsers(base biz_base_t) *biz_users_t {
+	return &biz_users_t{base}
 }
 
-func (u *users) do(req proto.Message, accId *uint64, accUN *string) error {
+func (u *biz_users_t) do(req proto.Message, accId *uint64, accUN *string) error {
 	pack, err := u.toPacket(req)
 	if err != nil {
 		return err
@@ -32,4 +32,4 @@ func (u *users) do(req proto.Message, accId *uint64, accUN *string) error {
 	return u.poster.Handle(pack, &lib.UsersRes{Users: users})
 }
 
-var _ biz = (*users)(nil)
+var _ biz_i = (*biz_users_t)(nil)
