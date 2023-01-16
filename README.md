@@ -2,6 +2,6 @@
 
 ## todo
 
-* user online state
+* push: broadcast online / table
 * emoji
 * send file
