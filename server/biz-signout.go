@@ -15,6 +15,8 @@ func initialSignout(base biz_base_t) *biz_signout_t {
 }
 
 func (s *biz_signout_t) do(req proto.Message, accId *uint64, accUN *string) error {
+	s.storage.UpdateOnline(*accId, false)
+
 	*accId = 0
 	*accUN = ""
 

@@ -43,6 +43,7 @@ func (b *biz_base_t) handleAuth(pack *lib.Packet, account *Account, accId *uint6
 	}
 	*accId = account.Id
 	*accUN = account.Username
+	b.storage.UpdateOnline(*accId, true)
 	return nil
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"io"
 
@@ -12,7 +13,10 @@ import (
 	"github.com/muesli/reflow/indent"
 )
 
-const listHeight = 14
+const (
+	listWidth  = 20
+	listHeight = 14
+)
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -24,10 +28,11 @@ var (
 
 type item_t struct {
 	username string
+	online   bool
 	msgCount uint32
 }
 
-func (i item_t) FilterValue() string { return "" }
+func (i item_t) FilterValue() string { return i.username }
 
 type item_proxy_t struct{}
 
@@ -40,11 +45,14 @@ func (d item_proxy_t) Render(w io.Writer, m list.Model, index int, listItem list
 		return
 	}
 
-	var str string
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%d. ", index+1))
+	sb.WriteString(i.username)
+	if i.online {
+		sb.WriteRune('↑')
+	}
 	if i.msgCount > 0 {
-		str = fmt.Sprintf("%d. %s (%d+)", index+1, i.username, i.msgCount)
-	} else {
-		str = fmt.Sprintf("%d. %s", index+1, i.username)
+		sb.WriteString(fmt.Sprintf(" (%d+)", i.msgCount))
 	}
 
 	fn := itemStyle.Render
@@ -54,7 +62,7 @@ func (d item_proxy_t) Render(w io.Writer, m list.Model, index int, listItem list
 		}
 	}
 
-	fmt.Fprint(w, fn(str))
+	fmt.Fprint(w, fn(sb.String()))
 }
 
 type ui_users_t struct {
@@ -62,28 +70,27 @@ type ui_users_t struct {
 	list list.Model
 }
 
-func initialUsers(base ui_base_t) ui_users_t {
+func newList(poster lib.Post, storage *storage_t) list.Model {
 	usersRes := &lib.UsersRes{}
-	if err := base.poster.Handle(&lib.Users{}, usersRes); err != nil {
+	if err := poster.Handle(&lib.Users{}, usersRes); err != nil {
 		lib.FatalNotNil(err)
 	} else if usersRes.Code < 0 {
 		lib.FatalNotNil(fmt.Errorf("获取用户列表异常: %d", usersRes.Code))
 	}
 
-	unReadMsgCnt, err := base.storage.UnReadMsgCount()
+	unReadMsgCnt, err := storage.UnReadMsgCount()
 	lib.FatalNotNil(err)
 
 	items := make([]list.Item, len(usersRes.Users))
 	for i := range usersRes.Users {
 		items[i] = item_t{
-			username: usersRes.Users[i],
-			msgCount: unReadMsgCnt[usersRes.Users[i]],
+			username: usersRes.Users[i].Username,
+			online:   usersRes.Users[i].Online,
+			msgCount: unReadMsgCnt[usersRes.Users[i].Username],
 		}
 	}
 
-	const defaultWidth = 20
-
-	l := list.New(items, item_proxy_t{}, defaultWidth, listHeight)
+	l := list.New(items, item_proxy_t{}, listWidth, listHeight)
 	l.Title = "用户列表"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
@@ -91,8 +98,11 @@ func initialUsers(base ui_base_t) ui_users_t {
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = usersHelpStyle
+	return l
+}
 
-	return ui_users_t{list: l, ui_base_t: base}
+func initialUsers(base ui_base_t) ui_users_t {
+	return ui_users_t{list: newList(base.poster, base.storage), ui_base_t: base}
 }
 
 func (m ui_users_t) Init() tea.Cmd {
@@ -141,6 +151,7 @@ func (m ui_users_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					i,
 					item_t{
 						username: v.username,
+						online:   v.online,
 						msgCount: count,
 					},
 				)

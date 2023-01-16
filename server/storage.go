@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/huoyijie/GoChat/lib"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -24,6 +25,7 @@ type Account struct {
 	Id                uint64 `gorm:"primaryKey"`
 	Username          string `gorm:"uniqueIndex:uni_username"`
 	PasshashAndBcrypt string
+	Online            bool
 }
 
 type Message struct {
@@ -74,16 +76,23 @@ func (s *storage_t) GetAccountByUN(username string) (account *Account, err error
 	return
 }
 
-func (s *storage_t) GetUsers(self string) (users []string, err error) {
+func (s *storage_t) UpdateOnline(id uint64, online bool) (err error) {
+	err = s.db.Model(&Account{Id: id}).Update("online", online).Error
+	return
+}
+
+func (s *storage_t) GetUsers(self string) (users []*lib.User, err error) {
 	var accounts []Account
-	err = s.db.Select("username").Find(&accounts).Order("username").Error
+	err = s.db.Select("username", "online").Order("username").Find(&accounts).Error
 	if err != nil {
 		return
 	}
-	users = make([]string, 0, len(accounts)-1)
+
+	users = make([]*lib.User, 0, len(accounts)-1)
 	for i := range accounts {
 		if accounts[i].Username != self {
-			users = append(users, accounts[i].Username)
+			user := &lib.User{Username: accounts[i].Username, Online: accounts[i].Online}
+			users = append(users, user)
 		}
 	}
 	return

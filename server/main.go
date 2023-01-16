@@ -165,6 +165,13 @@ func handleConn(conn net.Conn, storage *storage_t, node *snowflake.Node) {
 		accUN string
 	)
 
+	// 断开连接后，更新用户在线状态
+	defer func() {
+		if accId > 0 {
+			storage.UpdateOnline(accId, false)
+		}
+	}()
+
 	// 通过该 channel 可向当前连接发送 packet
 	packChan := make(chan *lib.Packet, 1024)
 	var poster lib.Post = newPoster(packChan)

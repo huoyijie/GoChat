@@ -66,11 +66,16 @@ message SignoutRes {
   int32 code  = 1;
 }
 
+message User {
+  string username = 1;
+  bool   online   = 2;
+}
+
 message Users {}
 
 message UsersRes {
-  int32           code  = 1;
-  repeated string users = 2;
+  int32         code  = 1;
+  repeated User users = 2;
 }
 
 enum MsgKind {
