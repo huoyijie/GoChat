@@ -2,4 +2,6 @@
 
 ## todo
 
-* select * from xxx where `from` = 'xx' for update ====== ？
+* user online state
+* emoji
+* send file

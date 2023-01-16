@@ -7,7 +7,6 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -32,6 +31,7 @@ type Message struct {
 	Kind     int32
 	From, To string
 	Data     []byte
+	Read     bool
 }
 
 type storage_t struct {
@@ -96,13 +96,23 @@ func (s *storage_t) NewMsg(msg *Message) (err error) {
 
 func (s *storage_t) GetMsgList(to string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`to` = ?", to).Find(&msgList).Order("id").Error; err != nil {
+		msg := &Message{To: to}
+
+		res := tx.Model(msg).Where(msg).Update("read", true)
+		if err := res.Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("`to` = ?", to).Delete(&Message{}).Error; err != nil {
-			msgList = nil
-			return err
+		if unReadMsgCnt := res.RowsAffected; unReadMsgCnt > 0 {
+			msg.Read = true
+			if err := tx.Where(msg).Find(&msgList).Order("id").Error; err != nil {
+				return err
+			}
+
+			if err := tx.Where(msg).Delete(msg).Error; err != nil {
+				msgList = nil
+				return err
+			}
 		}
 
 		return nil

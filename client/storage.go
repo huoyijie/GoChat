@@ -36,6 +36,7 @@ type Message struct {
 	Kind int32
 	From string
 	Data []byte
+	Read bool
 }
 
 // 客户端本地存储
@@ -99,13 +100,22 @@ func (s *storage_t) NewMsg(msg *Message) (err error) {
 // 获取某个用户发给自己的未读消息列表
 func (s *storage_t) GetMsgList(from string) (msgList []Message, err error) {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`from` = ?", from).Find(&msgList).Order("id").Error; err != nil {
+		msg := &Message{From: from}
+		res := tx.Model(msg).Where(msg).Update("read", true)
+		if err := res.Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("`from` = ?", from).Delete(&Message{}).Error; err != nil {
-			msgList = nil
-			return err
+		if unReadMsgCnt := res.RowsAffected; unReadMsgCnt > 0 {
+			msg.Read = true
+			if err := tx.Where(msg).Find(&msgList).Order("id").Error; err != nil {
+				return err
+			}
+
+			if err := tx.Where(msg).Delete(msg).Error; err != nil {
+				msgList = nil
+				return err
+			}
 		}
 
 		return nil
