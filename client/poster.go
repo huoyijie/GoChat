@@ -17,6 +17,8 @@ func syncRequestToKind(m proto.Message) (kind lib.PackKind, err error) {
 		kind = lib.PackKind_SIGNIN
 	case *lib.Token:
 		kind = lib.PackKind_TOKEN
+	case *lib.Signout:
+		kind = lib.PackKind_SIGNOUT
 	case *lib.Users:
 		kind = lib.PackKind_USERS
 	default:

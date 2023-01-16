@@ -247,11 +247,6 @@ func dbPath() string {
 	return filepath.Join(lib.WorkDir, dbName())
 }
 
-// 删除本地存储文件
-func dropDB() error {
-	return os.Remove(dbPath())
-}
-
 // 服务器地址环境变量
 func svrAddr() string {
 	svrAddr, found := os.LookupEnv("SVR_ADDR")

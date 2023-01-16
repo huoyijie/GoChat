@@ -144,3 +144,19 @@ func (s *storage_t) UnReadMsgCount() (msgCount map[string]uint32, err error) {
 	}
 	return
 }
+
+// 删除本地存储隐私数据
+func (s *storage_t) DropPrivacy() (err error) {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("1 = 1").Delete(&Message{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("1 = 1").Delete(&KeyValue{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+	return
+}

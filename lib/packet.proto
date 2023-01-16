@@ -8,17 +8,18 @@ option go_package = "github.com/huoyijie/GoChat/lib";
 
 enum PackKind {
   // Server
-  PONG   = 0;
-  ERR    = 1;
-  RES    = 2;
+  PONG    = 0;
+  ERR     = 1;
+  RES     = 2;
   // All
-  MSG    = 3;
+  MSG     = 3;
   // Client
-  PING   = 4;
-  SIGNUP = 5;
-  SIGNIN = 6;
-  TOKEN  = 7;
-  USERS  = 8;
+  PING    = 4;
+  SIGNUP  = 5;
+  SIGNIN  = 6;
+  TOKEN   = 7;
+  SIGNOUT = 8;
+  USERS   = 9;
 }
 
 message Packet {
@@ -57,6 +58,12 @@ message TokenRes {
   uint64 id       = 2;
   string username = 3;
   bytes  token    = 4;
+}
+
+message Signout {}
+
+message SignoutRes {
+  int32 code  = 1;
 }
 
 message Users {}

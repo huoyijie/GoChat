@@ -111,6 +111,8 @@ func kindToBiz(kind lib.PackKind, b biz_base_t, node *snowflake.Node) (biz biz_i
 		biz = initialSignin(b)
 	case lib.PackKind_TOKEN:
 		biz = initialValToken(b)
+	case lib.PackKind_SIGNOUT:
+		biz = initialSignout(b)
 	case lib.PackKind_USERS:
 		biz = initialUsers(b)
 	case lib.PackKind_MSG:

@@ -10,7 +10,7 @@ import (
 // 转换同步响应类型
 func syncResponseToKind(m proto.Message) (kind lib.PackKind, err error) {
 	switch m.(type) {
-	case *lib.TokenRes, *lib.UsersRes:
+	case *lib.TokenRes, *lib.UsersRes, *lib.SignoutRes:
 		kind = lib.PackKind_RES
 	default:
 		err = errors.New("invalid kind of packet")

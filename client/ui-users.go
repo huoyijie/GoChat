@@ -110,8 +110,12 @@ func (m ui_users_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", tea.KeyEsc.String(), tea.KeyCtrlC.String():
 			return m, tea.Quit
 		case tea.KeyCtrlX.String():
+			signoutRes := &lib.SignoutRes{}
+			if err := m.poster.Handle(&lib.Signout{}, signoutRes); err != nil || signoutRes.Code < 0 {
+				return m, nil
+			}
 			// 删除本地存储文件
-			dropDB()
+			m.storage.DropPrivacy()
 			home := initialHome(m.ui_base_t)
 			return home, home.Init()
 		case tea.KeyEnter.String():
