@@ -9,7 +9,9 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -212,7 +214,7 @@ func renderHome(poster lib.Post, storage *Storage) (renderHome bool) {
 }
 
 // 渲染 UI
-func renderUI(poster lib.Post, storage *Storage) {
+func renderUI(poster lib.Post, storage *Storage, sigChan chan<- os.Signal) {
 	b := initialBase(poster, storage)
 	defer b.close()
 
@@ -226,8 +228,9 @@ func renderUI(poster lib.Post, storage *Storage) {
 	p := tea.NewProgram(m)
 
 	_, err := p.Run()
-
 	lib.FatalNotNil(err)
+
+	sigChan <- os.Interrupt
 }
 
 // 存储文件名字环境变量
@@ -259,41 +262,56 @@ func svrAddr() string {
 }
 
 // 连接服务器，连接失败按照指数回退策略重试，最多重试20次
-func connect() (net.Conn, error) {
+func connect(sigChan <-chan os.Signal) (net.Conn, error) {
 	for i := 0; i < 20; i++ {
-		// 客户端进行 tcp 拨号，请求连接服务器
-		if conn, err := net.Dial("tcp", svrAddr()); err == nil {
-			return conn, nil
+		select {
+		// 如果 UI 已退出，停止连接服务器
+		case <-sigChan:
+			return nil, nil
+		default:
+			// 客户端进行 tcp 拨号，请求连接服务器
+			if conn, err := net.DialTimeout("tcp", svrAddr(), 3*time.Second); err == nil {
+				return conn, nil
+			}
+
+			p := math.Pow(2, float64(i))
+			r := float64(rand.Intn(1000))
+			d := time.Duration(math.Min(p+r, 32000))
+
+			// sleep
+			time.Sleep(d * time.Millisecond)
 		}
-
-		p := math.Pow(2, float64(i))
-		r := float64(rand.Intn(1000))
-		d := time.Duration(math.Min(p+r, 32000))
-
-		// 遇到连接错误后，1s后自动重新连接
-		time.Sleep(d * time.Millisecond)
 	}
 	return nil, errors.New("connect error")
 }
 
 func main() {
+	// 创建信号 channel
+	sigChan := make(chan os.Signal, 1)
+	// 注册要监听哪些信号
+	signal.Notify(sigChan, os.Interrupt)    // ctrl+c
+	signal.Notify(sigChan, syscall.SIGTERM) // kill
+
 	// 初始化存储
 	storage, err := new(Storage).Init(dbPath())
 	lib.FatalNotNil(err)
 
 	// 请求 channel
-	reqChan := make(chan *request_t)
+	reqChan := make(chan *request_t, 1024)
 
 	// 渲染 UI
 	var poster lib.Post = newPoster(reqChan)
-	go renderUI(poster, storage)
+	go renderUI(poster, storage, sigChan)
 
 	var reconnect bool
 
 	for {
 		// 连接服务器
-		conn, err := connect()
+		conn, err := connect(sigChan)
 		lib.FatalNotNil(err)
+		if conn == nil { // quit UI
+			return
+		}
 
 		// 重新连接需要验证 token
 		if reconnect {
@@ -306,7 +324,7 @@ func main() {
 		}
 
 		// 响应 channel
-		resChan := make(chan *response_t)
+		resChan := make(chan *response_t, 1024)
 
 		// 启动单独的协程，接收处理或转发来自服务器的 packet
 		go recvFrom(conn, resChan, storage)

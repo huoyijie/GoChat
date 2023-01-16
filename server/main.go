@@ -164,7 +164,7 @@ func handleConn(conn net.Conn, storage *Storage, node *snowflake.Node) {
 	)
 
 	// 通过该 channel 可向当前连接发送 packet
-	packChan := make(chan *lib.Packet)
+	packChan := make(chan *lib.Packet, 1024)
 	var poster lib.Post = newPoster(packChan)
 	base := initialBase(poster, storage)
 
