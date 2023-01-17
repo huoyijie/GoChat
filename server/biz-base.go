@@ -19,13 +19,21 @@ type biz_i interface {
 
 // 后台业务逻辑对象可嵌入 biz_base_t
 type biz_base_t struct {
-	poster  lib.Post
-	storage *storage_t
+	sid       uint64
+	poster    lib.Post
+	eventChan chan<- event_i
+	pushChan  chan<- *lib.Push
+	c         chan *lib.Push
+	storage   *storage_t
 }
 
-func initialBase(poster lib.Post, storage *storage_t) biz_base_t {
+func initialBase(sid uint64, poster lib.Post, eventChan chan<- event_i, pushChan chan<- *lib.Push, storage *storage_t) biz_base_t {
 	return biz_base_t{
+		sid,
 		poster,
+		eventChan,
+		pushChan,
+		make(chan *lib.Push, 1024),
 		storage,
 	}
 }
@@ -41,9 +49,26 @@ func (b *biz_base_t) handleAuth(pack *lib.Packet, account *Account, accId *uint6
 	if err != nil {
 		return err
 	}
+
+	// 更新全局变量
 	*accId = account.Id
 	*accUN = account.Username
+
+	// 更新表
 	b.storage.UpdateOnline(*accId, true)
+
+	// 上线事件
+	b.eventChan <- &online_t{b.sid, b.c}
+
+	// 上线提醒
+	bytes, err := lib.Marshal(&lib.Online{Kind: lib.OnlineKind_ON, Username: *accUN})
+	if err != nil {
+		return err
+	}
+	b.pushChan <- &lib.Push{
+		Kind: lib.PushKind_ONLINE,
+		Data: bytes,
+	}
 	return nil
 }
 

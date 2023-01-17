@@ -124,7 +124,7 @@ func (m ui_users_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err := m.poster.Handle(&lib.Signout{}, signoutRes); err != nil || signoutRes.Code < 0 {
 				return m, nil
 			}
-			// 删除本地存储文件
+			// 删除本地存储数据
 			m.storage.DropPrivacy()
 			home := initialHome(m.ui_base_t)
 			return home, home.Init()
@@ -143,20 +143,39 @@ func (m ui_users_t) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		pushes, err := m.storage.GetOnlinePushes()
+		if err != nil {
+			return m, nil
+		}
+
 		var cmds []tea.Cmd
+	loop:
 		for i := range m.list.Items() {
 			v := m.list.Items()[i].(item_t)
-			if count, ok := unReadMsgCnt[v.username]; ok {
-				cmd := m.list.SetItem(
-					i,
-					item_t{
-						username: v.username,
-						online:   v.online,
-						msgCount: count,
-					},
-				)
-				cmds = append(cmds, cmd)
+
+			count, hasUnReadMsg := unReadMsgCnt[v.username]
+			on, hasOnlinePush := pushes[v.username]
+
+			if !(hasUnReadMsg || hasOnlinePush) {
+				continue loop
 			}
+
+			item := item_t{
+				username: v.username,
+				online:   v.online,
+				msgCount: v.msgCount,
+			}
+
+			if hasUnReadMsg {
+				item.msgCount = count
+			}
+
+			if hasOnlinePush {
+				item.online = on
+			}
+
+			cmd := m.list.SetItem(i, item)
+			cmds = append(cmds, cmd)
 		}
 		cmds = append(cmds, tick())
 

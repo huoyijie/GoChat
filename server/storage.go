@@ -114,7 +114,7 @@ func (s *storage_t) GetMsgList(to string) (msgList []Message, err error) {
 
 		if unReadMsgCnt := res.RowsAffected; unReadMsgCnt > 0 {
 			msg.Read = true
-			if err := tx.Where(msg).Find(&msgList).Order("id").Error; err != nil {
+			if err := tx.Where(msg).Order("id").Find(&msgList).Error; err != nil {
 				return err
 			}
 

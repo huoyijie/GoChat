@@ -39,6 +39,14 @@ type Message struct {
 	Read bool
 }
 
+// 服务器 push
+type Push struct {
+	Id   uint64 `gorm:"primaryKey"`
+	Kind int32
+	Data []byte
+	Read bool
+}
+
 // 客户端本地存储
 type storage_t struct {
 	db *gorm.DB
@@ -52,9 +60,12 @@ func (s *storage_t) Init(filePath string) (*storage_t, error) {
 		s.db = db
 		if err := s.db.Transaction(func(tx *gorm.DB) error {
 			// 自动根据模型更新表结构
-			var kv KeyValue
-			var message Message
-			if err := tx.AutoMigrate(&kv, &message); err != nil {
+			var (
+				kv      KeyValue
+				message Message
+				push    Push
+			)
+			if err := tx.AutoMigrate(&kv, &message, &push); err != nil {
 				return err
 			}
 			return nil
@@ -108,7 +119,7 @@ func (s *storage_t) GetMsgList(from string) (msgList []Message, err error) {
 
 		if unReadMsgCnt := res.RowsAffected; unReadMsgCnt > 0 {
 			msg.Read = true
-			if err := tx.Where(msg).Find(&msgList).Order("id").Error; err != nil {
+			if err := tx.Where(msg).Order("id").Find(&msgList).Error; err != nil {
 				return err
 			}
 
@@ -145,15 +156,60 @@ func (s *storage_t) UnReadMsgCount() (msgCount map[string]uint32, err error) {
 	return
 }
 
-// 删除本地存储隐私数据
-func (s *storage_t) DropPrivacy() (err error) {
-	err = s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("1 = 1").Delete(&Message{}).Error; err != nil {
+// 收到新 push
+func (s *storage_t) NewPush(push *Push) (err error) {
+	err = s.db.Create(push).Error
+	return
+}
+
+// 获取上下线 push 列表
+func (s *storage_t) GetOnlinePushes() (pushes map[string]bool, err error) {
+	var list []Push
+	if err = s.db.Transaction(func(tx *gorm.DB) error {
+		push := &Push{Kind: int32(lib.PushKind_ONLINE)}
+		res := tx.Model(push).Where("kind = 0").Update("read", true)
+		if err := res.Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("1 = 1").Delete(&KeyValue{}).Error; err != nil {
-			return err
+		if unReadPushCnt := res.RowsAffected; unReadPushCnt > 0 {
+			push.Read = true
+			if err := tx.Where("kind = 0 and read = 1").Order("id").Find(&list).Error; err != nil {
+				return err
+			}
+
+			if err := tx.Where("kind = 0 and read = 1").Delete(push).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return
+	}
+
+	pushes = make(map[string]bool)
+	for i := range list {
+		online := &lib.Online{}
+		err = lib.Unmarshal(list[i].Data, online)
+		if err != nil {
+			return
+		}
+		on := online.Kind == lib.OnlineKind_ON
+		pushes[online.Username] = on
+	}
+	return
+}
+
+// 删除本地存储隐私数据
+func (s *storage_t) DropPrivacy() (err error) {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		vals := []any{&Message{}, &Push{}, &KeyValue{}}
+
+		for _, v := range vals {
+			if err := tx.Where("1 = 1").Delete(v).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil

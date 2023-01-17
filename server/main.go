@@ -31,7 +31,7 @@ func signalHandler() {
 }
 
 // 把来自 packChan 的 packet 都发送到 conn
-func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *string, storage *storage_t) {
+func sendTo(conn net.Conn, packChan <-chan *lib.Packet, c <-chan *lib.Push, accId *uint64, accUN *string, storage *storage_t) {
 	// 间隔 100ms 检查是否有新消息
 	interval := time.NewTicker(100 * time.Millisecond)
 	defer interval.Stop()
@@ -52,15 +52,45 @@ func sendTo(conn net.Conn, packChan <-chan *lib.Packet, accId *uint64, accUN *st
 		return
 	}
 
+loop:
 	for {
 		select {
 
-		// 发送 packet 到服务器
+		// 发送 packet 到客户端
 		case pack, ok := <-packChan:
 			if !ok { // recvFrom 协程已退出，需要退出当前协程
 				return
 			}
 
+			if err := sendPack(pack); err != nil {
+				log.Println(err)
+				return
+			}
+
+		// 发送 push 到客户端
+		case push := <-c:
+			// 上下线提醒不用发给自己
+			if push.Kind == lib.PushKind_ONLINE {
+				online := &lib.Online{}
+				if err := lib.Unmarshal(push.Data, online); err != nil {
+					log.Println(err)
+					return
+				}
+				if online.Username == *accUN {
+					continue loop
+				}
+			}
+
+			bytes, err := lib.Marshal(push)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			pack := &lib.Packet{
+				Kind: lib.PackKind_PUSH,
+				Data: bytes,
+			}
 			if err := sendPack(pack); err != nil {
 				log.Println(err)
 				return
@@ -155,7 +185,7 @@ func recvFrom(conn net.Conn, b biz_base_t, accId *uint64, accUN *string, node *s
 	}
 }
 
-func handleConn(conn net.Conn, storage *storage_t, node *snowflake.Node) {
+func handleConn(conn net.Conn, sid uint64, eventChan chan<- event_i, pushChan chan<- *lib.Push, storage *storage_t, node *snowflake.Node) {
 	// 从当前方法返回后，断开连接，清理资源等
 	defer conn.Close()
 
@@ -169,19 +199,31 @@ func handleConn(conn net.Conn, storage *storage_t, node *snowflake.Node) {
 	defer func() {
 		if accId > 0 {
 			storage.UpdateOnline(accId, false)
+
+			// 下线事件
+			eventChan <- &offline_t{sid}
+
+			// 下线提醒
+			bytes, err := lib.Marshal(&lib.Online{Kind: lib.OnlineKind_OFF, Username: accUN})
+			lib.FatalNotNil(err)
+
+			pushChan <- &lib.Push{
+				Kind: lib.PushKind_ONLINE,
+				Data: bytes,
+			}
 		}
 	}()
 
 	// 通过该 channel 可向当前连接发送 packet
 	packChan := make(chan *lib.Packet, 1024)
 	var poster lib.Post = newPoster(packChan)
-	base := initialBase(poster, storage)
+	base := initialBase(sid, poster, eventChan, pushChan, storage)
 
 	// 为每个客户端启动一个协程，读取并处理客户端发送的 packet
 	go recvFrom(conn, base, &accId, &accUN, node)
 
 	// 为每个客户端启动一个协程，把来自 packChan 的 packet 都发送到 conn
-	sendTo(conn, packChan, &accId, &accUN, storage)
+	sendTo(conn, packChan, base.c, &accId, &accUN, storage)
 }
 
 func main() {
@@ -205,6 +247,12 @@ func main() {
 	node, err := snowflake.NewNode(1)
 	lib.FatalNotNil(err)
 
+	eventChan := make(chan event_i, 1024)
+	pushChan := make(chan *lib.Push, 1024)
+	// 开启独立协程处理 push
+	go handlePush(eventChan, pushChan)
+
+	var sid uint64
 	// 循环接受客户端连接
 	for {
 		// 每当有客户端连接时，ln.Accept 会返回新的连接 conn
@@ -212,7 +260,9 @@ func main() {
 		// 如果接受的新连接遇到错误，则退出进程
 		lib.FatalNotNil(err)
 
+		sid++
+
 		// 启动新协程处理当前连接
-		go handleConn(conn, storage, node)
+		go handleConn(conn, sid, eventChan, pushChan, storage, node)
 	}
 }

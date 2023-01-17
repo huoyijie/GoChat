@@ -119,6 +119,16 @@ func handlePack(pack *lib.Packet, resChan chan<- *response_t, storage *storage_t
 		}
 		// log.Println(string(pong.Payload))
 
+	// 当前连接用户收到服务器 push
+	case lib.PackKind_PUSH:
+		push := &lib.Push{}
+		err = lib.Unmarshal(pack.Data, push)
+		if err != nil {
+			return
+		}
+		// 新 push 写入本地存储
+		storage.NewPush(&Push{Kind: int32(push.Kind), Data: push.Data})
+
 	// 当前连接的登录用户收到新未读消息
 	case lib.PackKind_MSG:
 		msg := &lib.Msg{}

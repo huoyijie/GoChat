@@ -29,42 +29,45 @@ const (
 	PackKind_PONG PackKind = 0
 	PackKind_ERR  PackKind = 1
 	PackKind_RES  PackKind = 2
+	PackKind_PUSH PackKind = 3
 	// All
-	PackKind_MSG PackKind = 3
+	PackKind_MSG PackKind = 4
 	// Client
-	PackKind_PING    PackKind = 4
-	PackKind_SIGNUP  PackKind = 5
-	PackKind_SIGNIN  PackKind = 6
-	PackKind_TOKEN   PackKind = 7
-	PackKind_SIGNOUT PackKind = 8
-	PackKind_USERS   PackKind = 9
+	PackKind_PING    PackKind = 5
+	PackKind_SIGNUP  PackKind = 6
+	PackKind_SIGNIN  PackKind = 7
+	PackKind_TOKEN   PackKind = 8
+	PackKind_SIGNOUT PackKind = 9
+	PackKind_USERS   PackKind = 10
 )
 
 // Enum value maps for PackKind.
 var (
 	PackKind_name = map[int32]string{
-		0: "PONG",
-		1: "ERR",
-		2: "RES",
-		3: "MSG",
-		4: "PING",
-		5: "SIGNUP",
-		6: "SIGNIN",
-		7: "TOKEN",
-		8: "SIGNOUT",
-		9: "USERS",
+		0:  "PONG",
+		1:  "ERR",
+		2:  "RES",
+		3:  "PUSH",
+		4:  "MSG",
+		5:  "PING",
+		6:  "SIGNUP",
+		7:  "SIGNIN",
+		8:  "TOKEN",
+		9:  "SIGNOUT",
+		10: "USERS",
 	}
 	PackKind_value = map[string]int32{
 		"PONG":    0,
 		"ERR":     1,
 		"RES":     2,
-		"MSG":     3,
-		"PING":    4,
-		"SIGNUP":  5,
-		"SIGNIN":  6,
-		"TOKEN":   7,
-		"SIGNOUT": 8,
-		"USERS":   9,
+		"PUSH":    3,
+		"MSG":     4,
+		"PING":    5,
+		"SIGNUP":  6,
+		"SIGNIN":  7,
+		"TOKEN":   8,
+		"SIGNOUT": 9,
+		"USERS":   10,
 	}
 )
 
@@ -136,6 +139,95 @@ func (x MsgKind) Number() protoreflect.EnumNumber {
 // Deprecated: Use MsgKind.Descriptor instead.
 func (MsgKind) EnumDescriptor() ([]byte, []int) {
 	return file_packet_proto_rawDescGZIP(), []int{1}
+}
+
+type PushKind int32
+
+const (
+	PushKind_ONLINE PushKind = 0
+)
+
+// Enum value maps for PushKind.
+var (
+	PushKind_name = map[int32]string{
+		0: "ONLINE",
+	}
+	PushKind_value = map[string]int32{
+		"ONLINE": 0,
+	}
+)
+
+func (x PushKind) Enum() *PushKind {
+	p := new(PushKind)
+	*p = x
+	return p
+}
+
+func (x PushKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PushKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_packet_proto_enumTypes[2].Descriptor()
+}
+
+func (PushKind) Type() protoreflect.EnumType {
+	return &file_packet_proto_enumTypes[2]
+}
+
+func (x PushKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PushKind.Descriptor instead.
+func (PushKind) EnumDescriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{2}
+}
+
+type OnlineKind int32
+
+const (
+	OnlineKind_ON  OnlineKind = 0
+	OnlineKind_OFF OnlineKind = 1
+)
+
+// Enum value maps for OnlineKind.
+var (
+	OnlineKind_name = map[int32]string{
+		0: "ON",
+		1: "OFF",
+	}
+	OnlineKind_value = map[string]int32{
+		"ON":  0,
+		"OFF": 1,
+	}
+)
+
+func (x OnlineKind) Enum() *OnlineKind {
+	p := new(OnlineKind)
+	*p = x
+	return p
+}
+
+func (x OnlineKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (OnlineKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_packet_proto_enumTypes[3].Descriptor()
+}
+
+func (OnlineKind) Type() protoreflect.EnumType {
+	return &file_packet_proto_enumTypes[3]
+}
+
+func (x OnlineKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use OnlineKind.Descriptor instead.
+func (OnlineKind) EnumDescriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{3}
 }
 
 type Packet struct {
@@ -921,6 +1013,116 @@ func (x *ErrRes) GetCode() int32 {
 	return 0
 }
 
+type Push struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Kind PushKind `protobuf:"varint,1,opt,name=kind,proto3,enum=lib.PushKind" json:"kind,omitempty"`
+	Data []byte   `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *Push) Reset() {
+	*x = Push{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Push) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Push) ProtoMessage() {}
+
+func (x *Push) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Push.ProtoReflect.Descriptor instead.
+func (*Push) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *Push) GetKind() PushKind {
+	if x != nil {
+		return x.Kind
+	}
+	return PushKind_ONLINE
+}
+
+func (x *Push) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type Online struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Kind     OnlineKind `protobuf:"varint,1,opt,name=kind,proto3,enum=lib.OnlineKind" json:"kind,omitempty"`
+	Username string     `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+}
+
+func (x *Online) Reset() {
+	*x = Online{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_packet_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Online) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Online) ProtoMessage() {}
+
+func (x *Online) ProtoReflect() protoreflect.Message {
+	mi := &file_packet_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Online.ProtoReflect.Descriptor instead.
+func (*Online) Descriptor() ([]byte, []int) {
+	return file_packet_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Online) GetKind() OnlineKind {
+	if x != nil {
+		return x.Kind
+	}
+	return OnlineKind_ON
+}
+
+func (x *Online) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
 var File_packet_proto protoreflect.FileDescriptor
 
 var file_packet_proto_rawDesc = []byte{
@@ -971,19 +1173,31 @@ var file_packet_proto_rawDesc = []byte{
 	0x6f, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x74, 0x6f, 0x12, 0x12, 0x0a, 0x04, 0x64,
 	0x61, 0x74, 0x61, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22,
 	0x1c, 0x0a, 0x06, 0x45, 0x72, 0x72, 0x52, 0x65, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x2a, 0x74, 0x0a,
-	0x08, 0x50, 0x61, 0x63, 0x6b, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x4f, 0x4e,
-	0x47, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x45, 0x52, 0x52, 0x10, 0x01, 0x12, 0x07, 0x0a, 0x03,
-	0x52, 0x45, 0x53, 0x10, 0x02, 0x12, 0x07, 0x0a, 0x03, 0x4d, 0x53, 0x47, 0x10, 0x03, 0x12, 0x08,
-	0x0a, 0x04, 0x50, 0x49, 0x4e, 0x47, 0x10, 0x04, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x49, 0x47, 0x4e,
-	0x55, 0x50, 0x10, 0x05, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x49, 0x47, 0x4e, 0x49, 0x4e, 0x10, 0x06,
-	0x12, 0x09, 0x0a, 0x05, 0x54, 0x4f, 0x4b, 0x45, 0x4e, 0x10, 0x07, 0x12, 0x0b, 0x0a, 0x07, 0x53,
-	0x49, 0x47, 0x4e, 0x4f, 0x55, 0x54, 0x10, 0x08, 0x12, 0x09, 0x0a, 0x05, 0x55, 0x53, 0x45, 0x52,
-	0x53, 0x10, 0x09, 0x2a, 0x13, 0x0a, 0x07, 0x4d, 0x73, 0x67, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x08,
-	0x0a, 0x04, 0x54, 0x45, 0x58, 0x54, 0x10, 0x00, 0x42, 0x20, 0x5a, 0x1e, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x75, 0x6f, 0x79, 0x69, 0x6a, 0x69, 0x65, 0x2f,
-	0x47, 0x6f, 0x43, 0x68, 0x61, 0x74, 0x2f, 0x6c, 0x69, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x22, 0x3d, 0x0a,
+	0x04, 0x50, 0x75, 0x73, 0x68, 0x12, 0x21, 0x0a, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0e, 0x32, 0x0d, 0x2e, 0x6c, 0x69, 0x62, 0x2e, 0x50, 0x75, 0x73, 0x68, 0x4b, 0x69,
+	0x6e, 0x64, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x49, 0x0a, 0x06,
+	0x4f, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x23, 0x0a, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0e, 0x32, 0x0f, 0x2e, 0x6c, 0x69, 0x62, 0x2e, 0x4f, 0x6e, 0x6c, 0x69, 0x6e,
+	0x65, 0x4b, 0x69, 0x6e, 0x64, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x12, 0x1a, 0x0a, 0x08, 0x75,
+	0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75,
+	0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x2a, 0x7e, 0x0a, 0x08, 0x50, 0x61, 0x63, 0x6b, 0x4b,
+	0x69, 0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x4f, 0x4e, 0x47, 0x10, 0x00, 0x12, 0x07, 0x0a,
+	0x03, 0x45, 0x52, 0x52, 0x10, 0x01, 0x12, 0x07, 0x0a, 0x03, 0x52, 0x45, 0x53, 0x10, 0x02, 0x12,
+	0x08, 0x0a, 0x04, 0x50, 0x55, 0x53, 0x48, 0x10, 0x03, 0x12, 0x07, 0x0a, 0x03, 0x4d, 0x53, 0x47,
+	0x10, 0x04, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x49, 0x4e, 0x47, 0x10, 0x05, 0x12, 0x0a, 0x0a, 0x06,
+	0x53, 0x49, 0x47, 0x4e, 0x55, 0x50, 0x10, 0x06, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x49, 0x47, 0x4e,
+	0x49, 0x4e, 0x10, 0x07, 0x12, 0x09, 0x0a, 0x05, 0x54, 0x4f, 0x4b, 0x45, 0x4e, 0x10, 0x08, 0x12,
+	0x0b, 0x0a, 0x07, 0x53, 0x49, 0x47, 0x4e, 0x4f, 0x55, 0x54, 0x10, 0x09, 0x12, 0x09, 0x0a, 0x05,
+	0x55, 0x53, 0x45, 0x52, 0x53, 0x10, 0x0a, 0x2a, 0x13, 0x0a, 0x07, 0x4d, 0x73, 0x67, 0x4b, 0x69,
+	0x6e, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x54, 0x45, 0x58, 0x54, 0x10, 0x00, 0x2a, 0x16, 0x0a, 0x08,
+	0x50, 0x75, 0x73, 0x68, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x0a, 0x0a, 0x06, 0x4f, 0x4e, 0x4c, 0x49,
+	0x4e, 0x45, 0x10, 0x00, 0x2a, 0x1d, 0x0a, 0x0a, 0x4f, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4b, 0x69,
+	0x6e, 0x64, 0x12, 0x06, 0x0a, 0x02, 0x4f, 0x4e, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x4f, 0x46,
+	0x46, 0x10, 0x01, 0x42, 0x20, 0x5a, 0x1e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x68, 0x75, 0x6f, 0x79, 0x69, 0x6a, 0x69, 0x65, 0x2f, 0x47, 0x6f, 0x43, 0x68, 0x61,
+	0x74, 0x2f, 0x6c, 0x69, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -998,38 +1212,44 @@ func file_packet_proto_rawDescGZIP() []byte {
 	return file_packet_proto_rawDescData
 }
 
-var file_packet_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_packet_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_packet_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_packet_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_packet_proto_goTypes = []interface{}{
 	(PackKind)(0),      // 0: lib.PackKind
 	(MsgKind)(0),       // 1: lib.MsgKind
-	(*Packet)(nil),     // 2: lib.Packet
-	(*Ping)(nil),       // 3: lib.Ping
-	(*Pong)(nil),       // 4: lib.Pong
-	(*Auth)(nil),       // 5: lib.Auth
-	(*Signup)(nil),     // 6: lib.Signup
-	(*Signin)(nil),     // 7: lib.Signin
-	(*Token)(nil),      // 8: lib.Token
-	(*TokenRes)(nil),   // 9: lib.TokenRes
-	(*Signout)(nil),    // 10: lib.Signout
-	(*SignoutRes)(nil), // 11: lib.SignoutRes
-	(*User)(nil),       // 12: lib.User
-	(*Users)(nil),      // 13: lib.Users
-	(*UsersRes)(nil),   // 14: lib.UsersRes
-	(*Msg)(nil),        // 15: lib.Msg
-	(*ErrRes)(nil),     // 16: lib.ErrRes
+	(PushKind)(0),      // 2: lib.PushKind
+	(OnlineKind)(0),    // 3: lib.OnlineKind
+	(*Packet)(nil),     // 4: lib.Packet
+	(*Ping)(nil),       // 5: lib.Ping
+	(*Pong)(nil),       // 6: lib.Pong
+	(*Auth)(nil),       // 7: lib.Auth
+	(*Signup)(nil),     // 8: lib.Signup
+	(*Signin)(nil),     // 9: lib.Signin
+	(*Token)(nil),      // 10: lib.Token
+	(*TokenRes)(nil),   // 11: lib.TokenRes
+	(*Signout)(nil),    // 12: lib.Signout
+	(*SignoutRes)(nil), // 13: lib.SignoutRes
+	(*User)(nil),       // 14: lib.User
+	(*Users)(nil),      // 15: lib.Users
+	(*UsersRes)(nil),   // 16: lib.UsersRes
+	(*Msg)(nil),        // 17: lib.Msg
+	(*ErrRes)(nil),     // 18: lib.ErrRes
+	(*Push)(nil),       // 19: lib.Push
+	(*Online)(nil),     // 20: lib.Online
 }
 var file_packet_proto_depIdxs = []int32{
 	0,  // 0: lib.Packet.kind:type_name -> lib.PackKind
-	5,  // 1: lib.Signup.auth:type_name -> lib.Auth
-	5,  // 2: lib.Signin.auth:type_name -> lib.Auth
-	12, // 3: lib.UsersRes.users:type_name -> lib.User
+	7,  // 1: lib.Signup.auth:type_name -> lib.Auth
+	7,  // 2: lib.Signin.auth:type_name -> lib.Auth
+	14, // 3: lib.UsersRes.users:type_name -> lib.User
 	1,  // 4: lib.Msg.kind:type_name -> lib.MsgKind
-	5,  // [5:5] is the sub-list for method output_type
-	5,  // [5:5] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	2,  // 5: lib.Push.kind:type_name -> lib.PushKind
+	3,  // 6: lib.Online.kind:type_name -> lib.OnlineKind
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_packet_proto_init() }
@@ -1218,14 +1438,38 @@ func file_packet_proto_init() {
 				return nil
 			}
 		}
+		file_packet_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Push); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_packet_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Online); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_packet_proto_rawDesc,
-			NumEnums:      2,
-			NumMessages:   15,
+			NumEnums:      4,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
