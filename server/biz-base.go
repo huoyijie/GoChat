@@ -58,7 +58,7 @@ func (b *biz_base_t) handleAuth(pack *lib.Packet, account *Account, accId *uint6
 	b.storage.UpdateOnline(*accId, true)
 
 	// 上线事件
-	b.eventChan <- &online_t{b.sid, b.c}
+	b.eventChan <- &e_online_t{b.sid, b.c}
 
 	// 上线提醒
 	bytes, err := lib.Marshal(&lib.Online{Kind: lib.OnlineKind_ON, Username: *accUN})

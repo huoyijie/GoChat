@@ -201,7 +201,7 @@ func handleConn(conn net.Conn, sid uint64, eventChan chan<- event_i, pushChan ch
 			storage.UpdateOnline(accId, false)
 
 			// 下线事件
-			eventChan <- &offline_t{sid}
+			eventChan <- &e_offline_t{sid}
 
 			// 下线提醒
 			bytes, err := lib.Marshal(&lib.Online{Kind: lib.OnlineKind_OFF, Username: accUN})

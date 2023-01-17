@@ -18,7 +18,7 @@ func (s *biz_signout_t) do(req proto.Message, accId *uint64, accUN *string) erro
 	s.storage.UpdateOnline(*accId, false)
 
 	// 下线事件
-	s.eventChan <- &offline_t{s.sid}
+	s.eventChan <- &e_offline_t{s.sid}
 
 	// 下线提醒
 	bytes, err := lib.Marshal(&lib.Online{Kind: lib.OnlineKind_OFF, Username: *accUN})
