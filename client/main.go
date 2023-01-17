@@ -268,7 +268,7 @@ func svrAddr() string {
 
 // 连接服务器，连接失败按照指数回退策略重试，最多重试20次
 func connect(sigChan <-chan os.Signal) (net.Conn, error) {
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 15; i++ {
 		select {
 		// 如果 UI 已退出，停止连接服务器
 		case <-sigChan:
@@ -281,7 +281,7 @@ func connect(sigChan <-chan os.Signal) (net.Conn, error) {
 
 			p := math.Pow(2, float64(i))
 			r := float64(rand.Intn(1000))
-			d := time.Duration(math.Min(p+r, 32000))
+			d := time.Duration(math.Min(p+r, 8000))
 
 			// sleep
 			time.Sleep(d * time.Millisecond)
