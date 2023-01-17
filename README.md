@@ -8,3 +8,4 @@
 
 * emoji
 * send file
+* group chat
