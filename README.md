@@ -6,6 +6,7 @@
 
 ## v0.4 todo
 
+* tls
 * emoji
 * send file
 * group chat
