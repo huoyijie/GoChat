@@ -1,17 +1,72 @@
-@startuml gochat
-package "Client" {
-    [main]
-    [poster]
-    [request]
-    [storage]
-    folder "UI" {
+@startuml gochat-client-uml
+package Client {
+    frame main {
+        frame sendTo {
+            [send packet]
+            [forward response]
+            [ping]
+        }
+        frame recvFrom {
+            [pong]
+            [push]
+            [msg]
+            [packet]
+        }
+        [renderUI]
+        [connect]
+    }
+
+    frame poster
+
+    frame request {
+        [request_t]
+        [response_t]
+    }
+
+    frame storage {
+        database sqlite {
+            [KeyValue]
+            [Message]
+            [Push]
+        }
+    }
+
+    folder ui {
         [base]
-        [chat]
         [form]
-        [home]
-        [signin]
         [signup]
+        [signin]
+        [home]
         [users]
+        [chat]
     }
 }
+
+form .up.> base
+signup .up.> form
+signin .up.> form
+home .up.> base
+users .up.> base
+chat .up.> base
+
+base -up-> poster
+base -up-> storage
+
+poster -up-> request
+recvFrom -up-> request
+sendTo -up-> request
+
+renderUI -down-> ui
+
+msg --> storage
+push --> storage
+
+sendTo -up-> connect
+recvFrom -up-> connect
+
+poster .up.> [send packet] : request
+
+packet ..> [forward response] : response
+[forward response] ..> poster : response
+
 @enduml

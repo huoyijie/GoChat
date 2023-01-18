@@ -1,46 +1,46 @@
 @startuml gochat-server-uml
-package "Server" {
-    frame "main" {
-        [signalHandler] as signal
-        [handlePush] as handlePush
-        [handleConn] as handleConn
-        frame "sendTo" {
+package Server {
+    frame main {
+        [signalHandler]
+        [handlePush]
+        [handleConn]
+        frame sendTo {
             [send packet]
             [push notify]
             [forward message]
         }
         [recvFrom] as recvFrom
     }
-    frame "poster"
-    frame "push"
-    frame "storage" {
-        database "sqlite" {
-            [Account] as acc
-            [Message] as msg
+    frame poster
+    frame push
+    frame storage {
+        database sqlite {
+            [Account]
+            [Message]
         }
     }
-    frame "auth"
+    frame auth
 
-    folder "biz" {
-        [base] as base
-        [signup] as signup
-        [signin] as signin
-        [val-token] as valtoken
-        [users] as users
-        [recv-msg] as recvmsg
-        [ping] as ping
-        [signout] as signout
+    folder biz {
+        [base]
+        [signup]
+        [signin]
+        [val-token]
+        [users]
+        [recv-msg]
+        [ping]
+        [signout]
     }
 }
 signup .up.> base
 signin .up.> base
-valtoken .up.> base
+[val-token] .up.> base
 users .up.> base
-recvmsg .up.> base
+[recv-msg] .up.> base
 ping .up.> base
 signout .up.> base
 
-valtoken -up-> auth : parse/generate token
+[val-token] -up-> auth : parse/generate token
 signup -up-> auth : generate token
 signin -up-> auth : generate token
 
@@ -50,9 +50,9 @@ base -up-> storage
 
 recvFrom -up-> signup
 recvFrom -up-> signin
-recvFrom -up-> valtoken
+recvFrom -up-> [val-token]
 recvFrom -up-> users
-recvFrom -up-> recvmsg
+recvFrom -up-> [recv-msg]
 recvFrom -up-> ping
 recvFrom -up-> signout
 

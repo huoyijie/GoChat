@@ -25,6 +25,10 @@
 
 ![gochat-server-uml](docs/images/gochat-server-uml.svg)
 
+* client
+
+![gochat-client-uml](docs/images/gochat-client-uml.svg)
+
 ## v0.4 todo
 
 * tls
