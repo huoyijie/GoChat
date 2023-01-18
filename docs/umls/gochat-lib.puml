@@ -1,10 +1,91 @@
-@startuml gochat
-package "lib" {
-    [codec]
-    [crypt]
-    [errcode]
-    [packet.proto]
-    [uitls]
-    (post) as post
+@startuml gochat-lib-uml
+package Lib {
+    folder "commons" {
+        [codec]
+        [crypt]
+        [errcode]
+        [uitls]
+        [post]
+    }
+
+    folder "packet.proto" {
+        folder "auth (cli=>srv)" {
+            [Auth]
+            [Signup]
+            [Signin]
+            [Token]
+            [Signout]
+
+            [TokenRes]
+            [SignoutRes]
+        }
+
+        folder "get users (cli=>srv)" {
+            [User]
+            [UsersRes]
+            [Users]
+        }
+
+        folder "send message (cli<=>srv)" {
+            [MsgKind]
+            [Msg]
+        }
+
+        folder "push notify (cli<=srv)" {
+            [PushKind]
+            [Push]
+            [OnlineKind]
+            [Online]
+        }
+
+        folder "ping/pong (cli<=>srv)" {
+            [Ping]
+            [Pong]
+        }
+
+        folder "error (cli<=srv)" {
+            [ErrRes]
+        }
+
+        [PackKind]
+        [Packet]
+    }
 }
+
+Packet .up.> PackKind
+Signup .up.> Auth
+Signin .up.> Auth
+Token .up.> Auth
+
+UsersRes .up.> User
+Users -down-> UsersRes
+
+Online .up.> OnlineKind
+
+Msg .up.> MsgKind
+Push .up.> PushKind
+Push .up.> Online
+
+Signup -down-> TokenRes
+Signin -down-> TokenRes
+Token -down-> TokenRes
+
+Signout -down-> SignoutRes
+
+Ping -down-> Pong
+
+Packet .up.> ErrRes
+Packet .up.> Ping
+Packet .up.> Pong
+Packet .up.> Push
+Packet .up.> Msg
+Packet .up.> Users
+Packet .up.> UsersRes
+
+Packet .up.> Signout
+Packet .up.> SignoutRes
+Packet .up.> Signup
+Packet .up.> Signin
+Packet .up.> Token
+Packet .up.> TokenRes
 @enduml

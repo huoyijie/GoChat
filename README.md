@@ -21,6 +21,10 @@
 
 ### Diagrams
 
+* lib
+
+![gochat-lib-uml](docs/images/gochat-lib-uml.svg)
+
 * server
 
 ![gochat-server-uml](docs/images/gochat-server-uml.svg)
