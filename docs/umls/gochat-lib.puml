@@ -1,0 +1,10 @@
+@startuml gochat
+package "lib" {
+    [codec]
+    [crypt]
+    [errcode]
+    [packet.proto]
+    [uitls]
+    (post) as post
+}
+@enduml

@@ -19,6 +19,12 @@
 
 ![gochat-jack](docs/images/gochat-jack.gif)
 
+### Diagrams
+
+* server
+
+![gochat-server-uml](docs/images/gochat-server-uml.svg)
+
 ## v0.4 todo
 
 * tls

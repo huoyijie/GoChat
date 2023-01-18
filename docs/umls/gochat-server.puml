@@ -1,0 +1,69 @@
+@startuml gochat-server-uml
+node "Server" {
+    package "Main" {
+        frame "main" {
+            [signalHandler] as signal
+            [handlePush] as handlePush
+            [handleConn] as handleConn
+            frame "sendTo" {
+                [send packet]
+                [push notify]
+                [forward message]
+            }
+            [recvFrom] as recvFrom
+        }
+        [poster] as poster
+        [push] as push
+        frame "storage" {
+            database "sqlite" {
+                [Account] as acc
+                [Message] as msg
+            }
+        }
+        [auth] as auth
+
+        folder "biz" {
+            [base] as base
+            [signup] as signup
+            [signin] as signin
+            [val-token] as valtoken
+            [users] as users
+            [recv-msg] as recvmsg
+            [ping] as ping
+            [signout] as signout
+        }
+    }
+}
+
+signup .up.> base
+signin .up.> base
+valtoken .up.> base
+users .up.> base
+recvmsg .up.> base
+ping .up.> base
+signout .up.> base
+
+valtoken -up-> auth : parse/generate token
+signup -up-> auth : generate token
+signin -up-> auth : generate token
+
+base -up-> poster : send packet to client
+base -up-> push : push notify to client
+base -up-> storage
+
+recvFrom -up-> signup
+recvFrom -up-> signin
+recvFrom -up-> valtoken
+recvFrom -up-> users
+recvFrom -up-> recvmsg
+recvFrom -up-> ping
+recvFrom -up-> signout
+
+handleConn .up.> sendTo
+handleConn .up.> recvFrom
+
+poster ..> [send packet] : channel
+push ..> handlePush : channel
+handlePush .left.> [push notify] : channel
+[forward message] -left-> storage
+@enduml

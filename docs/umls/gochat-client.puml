@@ -1,0 +1,17 @@
+@startuml gochat
+package "Client" {
+    [main]
+    [poster]
+    [request]
+    [storage]
+    folder "UI" {
+        [base]
+        [chat]
+        [form]
+        [home]
+        [signin]
+        [signup]
+        [users]
+    }
+}
+@enduml
