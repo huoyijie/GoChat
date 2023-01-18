@@ -1,40 +1,37 @@
 @startuml gochat-server-uml
-node "Server" {
-    package "Main" {
-        frame "main" {
-            [signalHandler] as signal
-            [handlePush] as handlePush
-            [handleConn] as handleConn
-            frame "sendTo" {
-                [send packet]
-                [push notify]
-                [forward message]
-            }
-            [recvFrom] as recvFrom
+package "Server" {
+    frame "main" {
+        [signalHandler] as signal
+        [handlePush] as handlePush
+        [handleConn] as handleConn
+        frame "sendTo" {
+            [send packet]
+            [push notify]
+            [forward message]
         }
-        [poster] as poster
-        [push] as push
-        frame "storage" {
-            database "sqlite" {
-                [Account] as acc
-                [Message] as msg
-            }
-        }
-        [auth] as auth
-
-        folder "biz" {
-            [base] as base
-            [signup] as signup
-            [signin] as signin
-            [val-token] as valtoken
-            [users] as users
-            [recv-msg] as recvmsg
-            [ping] as ping
-            [signout] as signout
+        [recvFrom] as recvFrom
+    }
+    frame "poster"
+    frame "push"
+    frame "storage" {
+        database "sqlite" {
+            [Account] as acc
+            [Message] as msg
         }
     }
-}
+    frame "auth"
 
+    folder "biz" {
+        [base] as base
+        [signup] as signup
+        [signin] as signin
+        [val-token] as valtoken
+        [users] as users
+        [recv-msg] as recvmsg
+        [ping] as ping
+        [signout] as signout
+    }
+}
 signup .up.> base
 signin .up.> base
 valtoken .up.> base
