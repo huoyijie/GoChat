@@ -5,16 +5,18 @@
 * ui
 * ...
 
-### Run server
+### Run
+
+* server
 
 ![gochat-server](docs/images/gochat-server.gif)
 
-### Run client
+* client (huoyijie)
 
-* huoyijie
 ![gochat-huoyijie](docs/images/gochat-huoyijie.gif)
 
-* jack
+* client (jack)
+
 ![gochat-jack](docs/images/gochat-jack.gif)
 
 ## v0.4 todo
