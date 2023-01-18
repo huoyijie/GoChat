@@ -52,7 +52,7 @@ package Lib {
     }
 }
 
-Packet .up.> PackKind
+Packet .left.> PackKind
 Signup .up.> Auth
 Signin .up.> Auth
 Token .up.> Auth
@@ -74,13 +74,14 @@ Signout -down-> SignoutRes
 
 Ping -down-> Pong
 
-Packet .up.> ErrRes
-Packet .up.> Ping
-Packet .up.> Pong
+Packet .down.> ErrRes
+Packet .down.> Ping
+Packet .down.> Pong
 Packet .up.> Push
-Packet .up.> Msg
-Packet .up.> Users
-Packet .up.> UsersRes
+
+Packet .down.> Msg
+Packet .down.> Users
+Packet .down.> UsersRes
 
 Packet .up.> Signout
 Packet .up.> SignoutRes
