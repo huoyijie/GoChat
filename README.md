@@ -19,6 +19,10 @@
 
 ![gochat-jack](docs/images/gochat-jack.gif)
 
+### Features
+
+![gochat-features-uml](docs/images/gochat-features-uml.svg)
+
 ### Diagrams
 
 * lib

@@ -1,0 +1,23 @@
+@startuml gochat-features-uml
+left to right direction
+
+package "Guest features" {
+    actor Guest as g
+    usecase "Sign up" as UC1
+    usecase "Sign in" as UC2
+}
+g --> UC1
+g --> UC2
+
+package "User features" {
+    actor User as u
+    usecase "Validate token" as UC3
+    usecase "Get users" as UC4
+    usecase "Chat with someone" as UC5
+    usecase "Sign out" as UC6
+}
+u --> UC3
+u --> UC4
+u --> UC5
+u --> UC6
+@enduml
