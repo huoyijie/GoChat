@@ -37,6 +37,10 @@
 
 ![gochat-client-uml](docs/images/gochat-client-uml.svg)
 
+* sequence
+
+![gochat-sequence-uml](docs/images/gochat-sequence-uml.svg)
+
 ## v0.4 todo
 
 * tls
