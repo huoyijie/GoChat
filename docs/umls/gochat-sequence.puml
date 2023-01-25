@@ -1,0 +1,140 @@
+@startuml gochat-sequence-uml
+skinparam backgroundColor #EEEBDC
+skinparam handwritten true
+skinparam MaxMessageSize 4
+
+skinparam sequence {
+ArrowColor DeepSkyBlue
+ActorBorderColor DeepSkyBlue
+LifeLineBorderColor blue
+LifeLineBackgroundColor #A9DCDF
+
+ParticipantBorderColor DeepSkyBlue
+ParticipantBackgroundColor DodgerBlue
+ParticipantFontName Impact
+ParticipantFontSize 17
+ParticipantFontColor #A9DCDF
+
+ActorBackgroundColor aqua
+ActorFontColor DeepSkyBlue
+ActorFontSize 17
+ActorFontName Aapex
+}
+
+actor User
+
+box "Client"
+participant main
+participant renderUI
+participant recvFrom
+participant sendTo
+participant storage
+end box
+
+box "Server"
+participant "main(s)" as mains
+participant "recvFrom(s)" as rfs
+participant "sendTo(s)" as sts
+participant handlePush
+participant "storage(s)" as ss
+end box
+
+activate mains
+mains -> ss : InitStorage
+activate ss
+ss --> mains : OK
+
+mains -> handlePush : StartGoroutine
+note right #aqua : create goroutine
+activate handlePush
+
+loop accept new connections
+mains -> mains : AcceptConnection
+
+User -> main : Run
+activate main
+
+main -> storage : InitLocalStorage
+activate storage
+
+storage --> main : OK
+
+loop auto reconnect
+main -> mains : ConnectServer
+mains --> main : OK
+end
+
+mains -> rfs : StartGoroutine
+note right #aqua : create goroutine
+activate rfs
+
+mains -> sts : StartGoroutine
+note right #aqua : create goroutine
+activate sts
+end
+
+main -> renderUI : StartGoroutine
+note right #aqua : create goroutine
+activate renderUI
+
+main -> recvFrom : StartGoroutine
+note right #aqua : create goroutine
+activate recvFrom
+
+main -> sendTo : CallFunction
+note right #aqua : main thread will be blocking in sendTo function
+activate sendTo
+
+renderUI -> storage : ReadToken
+storage --> renderUI : No
+
+renderUI -> renderUI : RenderHomePage
+
+User -> renderUI : Signup
+renderUI -> sendTo : SendSignupPacket
+
+sendTo -> rfs : SendSignupPacket
+rfs -> ss : SaveAccountToStorage
+ss --> rfs : OK
+rfs -> rfs : GenerateToken
+rfs -> sts : SendTokenResPacket
+sts -> recvFrom : SendTokenResPacket
+recvFrom -> renderUI : TokenRes
+renderUI -> storage : StoreToken
+storage --> renderUI : OK
+renderUI -> renderUI : RenderUsersPage
+
+User -> renderUI : ChatWithSomeone
+renderUI -> renderUI : RenderChatPage
+
+User -> renderUI : SendMessage
+renderUI -> sendTo : SendMessagePacket
+sendTo -> rfs : SendMessage
+rfs -> ss : SaveMessageToStorage
+ss --> rfs : OK
+
+sts -> ss : ReadUnreadMsgInterval
+ss --> sts : OK
+sts -> recvFrom : SendMessagePacket
+recvFrom -> storage : SaveMessageToLocalStorage
+storage --> recvFrom : OK
+
+renderUI -> renderUI : ReadUnreadMsgInterval
+renderUI --> User : ShowNewMsg
+
+handlePush -> sts : SendPush
+sts -> recvFrom : SendPushPacket
+recvFrom -> storage : SavePushToLocalStorage
+storage -> recvFrom : OK
+
+deactivate sts
+deactivate rfs
+deactivate handlePush
+deactivate sendTo
+deactivate recvFrom
+deactivate renderUI
+deactivate storage
+deactivate main
+deactivate ss
+deactivate mains
+@enduml
