@@ -334,7 +334,7 @@ func main() {
 		// 启动单独的协程，接收处理或转发来自服务器的 packet
 		go recvFrom(conn, resChan, storage)
 
-		// 启动单独的协程，发送请求并接收响应
+		// 当前协程调用并阻塞与 sendTo 函数，发送请求并接收响应
 		if quit := sendTo(conn, reqChan, resChan); quit {
 			return
 		}

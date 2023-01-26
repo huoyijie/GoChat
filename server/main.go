@@ -222,7 +222,7 @@ func handleConn(conn net.Conn, sid uint64, eventChan chan<- event_i, pushChan ch
 	// 为每个客户端启动一个协程，读取并处理客户端发送的 packet
 	go recvFrom(conn, base, &accId, &accUN, node)
 
-	// 为每个客户端启动一个协程，把来自 packChan 的 packet 都发送到 conn
+	// 当前协程调用并阻塞于 sendTo 函数，把来自 packChan 的 packet 都发送到 conn
 	sendTo(conn, packChan, base.c, &accId, &accUN, storage)
 }
 
