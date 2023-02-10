@@ -51,10 +51,10 @@ cd server
 go build -o target/gochat-server
 
 # build docker image
-docker build -t gochat-server:latest .
+docker build -t huoyijie/gochat-server:latest .
 
 # run docker c
-docker run -it -v "$(pwd)"/target:/root/.gochat gochat-server:latest
+docker run -it -v "$(pwd)"/target:/root/.gochat huoyijie/gochat-server:latest
 
 # open container's shell
 docker exec -it af2e58909af8 /bin/bash
